@@ -1,136 +1,264 @@
 
-import React, { useState } from 'react';
-import { FILAMENT_PRICE_PER_KILO } from '../constants';
-import { DollarSign, Scale, UserCheck, TrendingUp, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, Scale, TrendingUp, Info, Save, Cpu, Clock, Palette } from 'lucide-react';
+import { FilamentType } from '../types';
 
-const BudgetCalculator: React.FC = () => {
+interface BudgetCalculatorProps {
+  plaPrice: number;
+  petgPrice: number;
+  designPrice: number;
+  onUpdatePrices: (updates: { pla?: number, petg?: number, design?: number }) => void;
+}
+
+const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({ plaPrice, petgPrice, designPrice, onUpdatePrices }) => {
   const [weight, setWeight] = useState<number | ''>('');
+  const [designMinutes, setDesignMinutes] = useState<number | ''>(0);
   const [clientType, setClientType] = useState<'minorista' | 'mayorista'>('minorista');
-  const [filamentPrice, setFilamentPrice] = useState<number>(FILAMENT_PRICE_PER_KILO);
+  const [filamentType, setFilamentType] = useState<FilamentType>(FilamentType.PLA);
+  
+  const [localPlaPrice, setLocalPlaPrice] = useState<number>(plaPrice);
+  const [localPetgPrice, setLocalPetgPrice] = useState<number>(petgPrice);
+  const [localDesignPrice, setLocalDesignPrice] = useState<number>(designPrice);
+
+  useEffect(() => {
+    setLocalPlaPrice(plaPrice);
+    setLocalPetgPrice(petgPrice);
+    setLocalDesignPrice(designPrice);
+  }, [plaPrice, petgPrice, designPrice]);
+
+  const activePrice = filamentType === FilamentType.PLA ? localPlaPrice : localPetgPrice;
+
+  const handlePriceChange = (newVal: number, type: 'pla' | 'petg' | 'design') => {
+    if (type === 'pla') {
+      setLocalPlaPrice(newVal);
+      onUpdatePrices({ pla: newVal });
+    } else if (type === 'petg') {
+      setLocalPetgPrice(newVal);
+      onUpdatePrices({ petg: newVal });
+    } else {
+      setLocalDesignPrice(newVal);
+      onUpdatePrices({ design: newVal });
+    }
+  };
 
   const calculate = () => {
-    if (!weight) return null;
-    const costPerGram = filamentPrice / 1000;
-    const materialCost = costPerGram * Number(weight);
-    const baseCost = materialCost * 1.4;
-    const multiplier = clientType === 'minorista' ? 4 : 3;
-    const finalPrice = baseCost * multiplier;
-    const roundedPrice = Math.round(finalPrice / 100) * 100;
+    if (!weight && !designMinutes) return null;
+    
+    // Cálculo de Impresión
+    let printingPrice = 0;
+    let materialCost = 0;
+    let baseCost = 0;
+    
+    if (weight) {
+      const costPerGram = activePrice / 1000;
+      materialCost = costPerGram * Number(weight);
+      baseCost = materialCost * 1.4; // 40% operativo
+      const multiplier = clientType === 'minorista' ? 4 : 3;
+      printingPrice = Math.round((baseCost * multiplier) / 100) * 100;
+    }
+
+    // Cálculo de Diseño
+    const designCost = (localDesignPrice / 60) * (Number(designMinutes) || 0);
+    const finalPrice = printingPrice + designCost;
 
     return {
       materialCost,
       baseCost,
-      finalPrice: roundedPrice
+      printingPrice,
+      designCost,
+      finalPrice
     };
   };
 
   const results = calculate();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Calculadora de Presupuestos</h2>
-        <p className="text-slate-500 text-sm">Usando la fórmula oficial de Sinapsis 3D para evitar errores.</p>
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+      <div className="flex items-center gap-4">
+        <div className="bg-orange-600 p-3 rounded-2xl text-white shadow-lg shadow-orange-600/20">
+          <Cpu size={24} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Presupuestador Avanzado</h2>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Lógica de Costos Diferenciados y Diseño</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Peso del Modelo (g)</label>
-              <div className="relative">
-                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  type="number"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                  placeholder="Ej: 150"
-                />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* INPUTS */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Peso */}
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Peso Pieza (g)</label>
+                <div className="relative group">
+                  <Scale className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-600 transition-colors" size={20} />
+                  <input
+                    type="number"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full bg-slate-50 border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-orange-600 font-black text-xl text-slate-900 placeholder:text-slate-200"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              {/* Tiempo de Diseño */}
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Tiempo Diseño (min)</label>
+                <div className="relative group">
+                  <Clock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-600 transition-colors" size={20} />
+                  <input
+                    type="number"
+                    value={designMinutes}
+                    onChange={(e) => setDesignMinutes(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full bg-slate-50 border-none rounded-2xl pl-14 pr-6 py-5 focus:ring-2 focus:ring-orange-600 font-black text-xl text-slate-900 placeholder:text-slate-200"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipo de Cliente</label>
-              <div className="grid grid-cols-2 gap-2">
+            {/* Material */}
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo de Filamento</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setFilamentType(FilamentType.PLA)}
+                  className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${filamentType === FilamentType.PLA ? 'bg-slate-950 text-white border-slate-950 shadow-xl' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                >
+                  PLA (Estándar)
+                </button>
+                <button
+                  onClick={() => setFilamentType(FilamentType.PETG)}
+                  className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${filamentType === FilamentType.PETG ? 'bg-slate-950 text-white border-slate-950 shadow-xl' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                >
+                  PET-G (Técnico)
+                </button>
+              </div>
+            </div>
+
+            {/* Cliente */}
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Perfil de Cliente</label>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setClientType('minorista')}
-                  className={`py-3 rounded-2xl text-sm font-bold border-2 transition-all ${clientType === 'minorista' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-100'}`}
+                  className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${clientType === 'minorista' ? 'bg-slate-950 text-white border-slate-950 shadow-xl' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
                 >
-                  Minorista
+                  Minorista (x4)
                 </button>
                 <button
                   onClick={() => setClientType('mayorista')}
-                  className={`py-3 rounded-2xl text-sm font-bold border-2 transition-all ${clientType === 'mayorista' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-100'}`}
+                  className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${clientType === 'mayorista' ? 'bg-slate-950 text-white border-slate-950 shadow-xl' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
                 >
-                  Mayorista
+                  Mayorista (x3)
                 </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Precio Filamento ($/kg)</label>
-              <div className="relative">
-                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input
-                  type="number"
-                  value={filamentPrice}
-                  onChange={(e) => setFilamentPrice(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                />
+            {/* Configuración de Costos */}
+            <div className="pt-6 border-t border-slate-50 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                  Costo {filamentType} ($/kg)
+                  <Save size={10} className="text-green-500" />
+                </label>
+                <div className="relative group">
+                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-600 transition-colors" size={16} />
+                  <input
+                    type="number"
+                    value={activePrice}
+                    onChange={(e) => handlePriceChange(Number(e.target.value), filamentType === FilamentType.PLA ? 'pla' : 'petg')}
+                    className="w-full bg-slate-50 border-none rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-orange-600 font-black text-slate-900 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                  Costo Diseño ($/hr)
+                  <Save size={10} className="text-green-500" />
+                </label>
+                <div className="relative group">
+                  <Palette className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-600 transition-colors" size={16} />
+                  <input
+                    type="number"
+                    value={localDesignPrice}
+                    onChange={(e) => handlePriceChange(Number(e.target.value), 'design')}
+                    className="w-full bg-slate-50 border-none rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-orange-600 font-black text-slate-900 text-sm"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="bg-indigo-50 p-4 rounded-2xl flex items-start gap-3 border border-indigo-100">
-            <Info size={18} className="text-indigo-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-indigo-900/70 leading-relaxed">
-              La fórmula incluye un <strong>40% de margen</strong> para cubrir desperdicio, electricidad y mantenimiento de máquinas.
-            </p>
           </div>
         </div>
 
-        <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-indigo-200 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-8">
-              <div className="bg-white/20 p-2 rounded-xl">
-                <TrendingUp size={20} />
+        {/* RESULTS CARD */}
+        <div className="lg:col-span-5">
+          <div className="bg-orange-600 rounded-[3rem] p-10 text-white shadow-2xl shadow-orange-600/30 h-full flex flex-col justify-between relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"></div>
+            
+            <div className="relative z-10 space-y-10">
+              <div className="flex items-center gap-3 bg-black/10 w-fit px-4 py-2 rounded-full backdrop-blur-md">
+                <TrendingUp size={16} />
+                <span className="font-black uppercase tracking-[0.2em] text-[10px]">Cálculo Final</span>
               </div>
-              <span className="font-bold uppercase tracking-widest text-xs opacity-80">Resultado Presupuesto</span>
-            </div>
 
-            {results ? (
-              <div className="space-y-8">
-                <div>
-                  <div className="text-indigo-200 text-xs font-bold uppercase mb-1">Costo Material</div>
-                  <div className="text-2xl font-bold">${results.materialCost.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-                </div>
-                <div>
-                  <div className="text-indigo-200 text-xs font-bold uppercase mb-1">Costo Base (Energía + Margen)</div>
-                  <div className="text-2xl font-bold">${results.baseCost.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-                </div>
-                <div className="pt-4 border-t border-white/10">
-                  <div className="text-white text-xs font-bold uppercase mb-1">Precio Sugerido Final</div>
-                  <div className="text-5xl font-black text-white drop-shadow-sm">
-                    ${results.finalPrice.toLocaleString('es-AR')}
+              {results && (weight || designMinutes) ? (
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                      <div>
+                        <div className="text-orange-200 text-[9px] font-black uppercase tracking-widest mb-1">Impresión {weight}g</div>
+                        <div className="text-2xl font-black">${results.printingPrice.toLocaleString('es-AR')}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-orange-200 text-[9px] font-black uppercase tracking-widest mb-1">Diseño {designMinutes}min</div>
+                        <div className="text-2xl font-black">${Math.round(results.designCost).toLocaleString('es-AR')}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <div className="text-white text-[11px] font-black uppercase tracking-[0.3em] mb-4 opacity-90">Total Presupuestado</div>
+                    <div className="text-7xl font-black text-white tracking-tighter drop-shadow-lg">
+                      ${Math.round(results.finalPrice).toLocaleString('es-AR')}
+                    </div>
+                    <p className="text-orange-200 text-[10px] font-bold uppercase mt-4 tracking-widest">
+                      {clientType} • {filamentType}
+                    </p>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                <div className="bg-white/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                  <Scale size={32} className="opacity-40" />
+              ) : (
+                <div className="py-20 text-center space-y-6">
+                  <div className="bg-white/10 w-24 h-24 rounded-[2.5rem] flex items-center justify-center mx-auto backdrop-blur-md border border-white/10">
+                    <Scale size={40} className="opacity-40" />
+                  </div>
+                  <p className="text-orange-100 font-black uppercase tracking-[0.3em] text-[10px] leading-relaxed">
+                    Ingresá peso o<br/>minutos de diseño
+                  </p>
                 </div>
-                <p className="text-indigo-100 font-medium">Cargá el peso para ver el presupuesto</p>
-              </div>
+              )}
+            </div>
+
+            {results && (weight || designMinutes) && (
+              <button 
+                onClick={() => {
+                  const designText = designMinutes ? `\n- Diseño (${designMinutes}min): $${Math.round(results.designCost).toLocaleString('es-AR')}` : '';
+                  const printText = weight ? `\n- Impresión (${weight}g ${filamentType}): $${results.printingPrice.toLocaleString('es-AR')}` : '';
+                  const text = `Presupuesto Sinapsis 3D${printText}${designText}\n- TOTAL: $${Math.round(results.finalPrice).toLocaleString('es-AR')}`;
+                  navigator.clipboard.writeText(text);
+                  alert('¡Presupuesto copiado! 🚀');
+                }}
+                className="relative z-10 w-full bg-white text-orange-600 font-black py-5 rounded-[1.5rem] mt-12 hover:scale-[1.02] transition-all active:scale-95 shadow-2xl text-[11px] uppercase tracking-widest"
+              >
+                Copiar Presupuesto Detallado
+              </button>
             )}
           </div>
-
-          {results && (
-            <button className="w-full bg-white text-indigo-600 font-black py-4 rounded-2xl mt-8 hover:bg-indigo-50 transition-colors">
-              COPIAR PARA CLIENTE
-            </button>
-          )}
         </div>
       </div>
     </div>

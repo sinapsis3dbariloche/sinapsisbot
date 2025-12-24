@@ -2,7 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { StockItem, Order } from '../types';
-import { INITIAL_STOCK, INITIAL_ORDERS } from '../constants';
+import { INITIAL_STOCK, INITIAL_ORDERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE } from '../constants';
 
 // CONFIGURACIÓN DE FIREBASE - SINAPSIS 3D
 const firebaseConfig = {
@@ -20,7 +20,6 @@ const db = getFirestore(app);
 export const subscribeToStock = (callback: (stock: StockItem[]) => void) => {
   return onSnapshot(collection(db, 'stock'), (snapshot) => {
     if (snapshot.empty) {
-      // Si la base está vacía por primera vez (recién creada), la inicializamos con los datos por defecto
       initializeDatabase();
       return;
     }
@@ -36,6 +35,26 @@ export const subscribeToOrders = (callback: (orders: Order[]) => void) => {
   });
 };
 
+export const subscribeToSettings = (callback: (settings: any) => void) => {
+  const settingsRef = doc(db, 'config', 'settings');
+  return onSnapshot(settingsRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data());
+    } else {
+      setDoc(settingsRef, { 
+        plaPrice: DEFAULT_PLA_PRICE,
+        petgPrice: DEFAULT_PETG_PRICE,
+        designPrice: DEFAULT_DESIGN_PRICE
+      });
+    }
+  });
+};
+
+export const updateSettings = async (settings: any) => {
+  const docRef = doc(db, 'config', 'settings');
+  await setDoc(docRef, settings, { merge: true });
+};
+
 export const updateStockItemInDb = async (item: StockItem) => {
   const docRef = doc(db, 'stock', item.id);
   await setDoc(docRef, item, { merge: true });
@@ -47,7 +66,6 @@ export const addOrderToDb = async (order: Order) => {
 };
 
 const initializeDatabase = async () => {
-  console.log("Inicializando base de datos por primera vez...");
   const batch = writeBatch(db);
   INITIAL_STOCK.forEach(item => {
     const ref = doc(db, 'stock', item.id);
@@ -56,6 +74,12 @@ const initializeDatabase = async () => {
   INITIAL_ORDERS.forEach(order => {
     const ref = doc(db, 'orders', order.id);
     batch.set(ref, order);
+  });
+  const configRef = doc(db, 'config', 'settings');
+  batch.set(configRef, { 
+    plaPrice: DEFAULT_PLA_PRICE,
+    petgPrice: DEFAULT_PETG_PRICE,
+    designPrice: DEFAULT_DESIGN_PRICE
   });
   await batch.commit();
 };

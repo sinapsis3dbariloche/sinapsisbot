@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { StockItem, FilamentType } from '../types';
-import { Droplet, Plus, Minus, AlertCircle } from 'lucide-react';
+import { Droplet, Plus, Minus, AlertCircle, Search, X, Layers, ChevronRight } from 'lucide-react';
 
 interface StockBoardProps {
   stock: StockItem[];
@@ -10,119 +10,144 @@ interface StockBoardProps {
 
 const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
   const [activeType, setActiveType] = useState<FilamentType>(FilamentType.PLA);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const checkAlert = (item: StockItem) => {
-    const isCriticalColor = item.color === "Blanco" || item.color === "Negro";
-    const minClosed = isCriticalColor ? 3 : 1;
-    return item.closedCount < minClosed;
+    if (item.type === FilamentType.PETG) return item.closedCount < 1;
+    const isCritical = item.color === "Blanco" || item.color === "Negro";
+    return item.closedCount < (isCritical ? 3 : 1);
   };
 
-  // Lógica de ordenamiento: Prioridad a los que hay que reponer, luego por cantidad ascendente
-  const sortedStock = [...stock]
+  const getMin = (item: StockItem) => {
+    if (item.type === FilamentType.PETG) return 1;
+    return (item.color === "Blanco" || item.color === "Negro") ? 3 : 1;
+  };
+
+  const filteredStock = stock
     .filter(item => item.type === activeType)
+    .filter(item => item.color.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
       const aAlert = checkAlert(a);
       const bAlert = checkAlert(b);
-
-      // Si uno necesita reposición y el otro no, el que necesita va primero
       if (aAlert && !bAlert) return -1;
       if (!aAlert && bAlert) return 1;
-
-      // Si ambos están en el mismo estado de alerta, ordenar por cantidad de cerrados
-      if (a.closedCount !== b.closedCount) {
-        return a.closedCount - b.closedCount;
-      }
-
-      // Si tienen mismos cerrados, desempatar por abiertos
-      return a.openCount - b.openCount;
+      return a.color.localeCompare(b.color);
     });
 
   const updateCount = (id: string, field: 'closedCount' | 'openCount', delta: number) => {
     const item = stock.find(s => s.id === id);
     if (!item || !onUpdateStock) return;
-    const newVal = Math.max(0, item[field] + delta);
-    onUpdateStock(id, { [field]: newVal });
+    onUpdateStock(id, { [field]: Math.max(0, item[field] + delta) });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Inventario de Filamentos</h2>
-          <p className="text-slate-500 text-sm">Los colores que faltan aparecen primero</p>
+    <div className="space-y-4 max-w-5xl mx-auto h-full flex flex-col">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="bg-orange-600 p-2.5 rounded-xl text-white shadow-lg shadow-orange-600/20">
+            <Layers size={20} />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter leading-none">Control de Stock</h2>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sinapsis 3D Bariloche</p>
+          </div>
         </div>
         
-        <div className="flex bg-slate-100 p-1 rounded-2xl w-fit">
-          <button 
-            onClick={() => setActiveType(FilamentType.PLA)}
-            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeType === FilamentType.PLA ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            PLA
-          </button>
-          <button 
-            onClick={() => setActiveType(FilamentType.PETG)}
-            className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeType === FilamentType.PETG ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            PET-G
-          </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative w-full sm:w-56">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+            <input 
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl pl-9 pr-8 py-2 text-[11px] font-bold focus:ring-2 focus:ring-orange-600 transition-all placeholder:text-slate-300"
+            />
+          </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto">
+            <button 
+              onClick={() => setActiveType(FilamentType.PLA)}
+              className={`flex-1 sm:px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all ${activeType === FilamentType.PLA ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              PLA
+            </button>
+            <button 
+              onClick={() => setActiveType(FilamentType.PETG)}
+              className={`flex-1 sm:px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all ${activeType === FilamentType.PETG ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500'}`}
+            >
+              PET-G
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sortedStock.map((item) => {
-          const isLow = checkAlert(item);
-          return (
-            <div key={item.id} className={`bg-white p-5 rounded-3xl shadow-sm border transition-all duration-300 ${isLow ? 'border-red-200 bg-red-50/30' : 'border-slate-200'} flex flex-col gap-4`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-2xl shadow-inner flex items-center justify-center"
-                    style={{ backgroundColor: getHexColor(item.color) }}
-                  >
-                    <Droplet size={18} className={isDark(item.color) ? 'text-white/40' : 'text-black/20'} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 leading-tight">{item.color}</h3>
-                    {isLow && (
-                      <span className="text-[9px] font-black text-red-600 uppercase flex items-center gap-1 mt-0.5">
-                        <AlertCircle size={10} /> Reponer (Mín. {item.color === "Blanco" || item.color === "Negro" ? '3' : '1'})
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/60 backdrop-blur-sm p-3 rounded-2xl border border-slate-100 shadow-sm">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Cerrados</p>
-                  <div className="flex items-center justify-between">
-                    <button onClick={() => updateCount(item.id, 'closedCount', -1)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"><Minus size={14} /></button>
-                    <span className={`font-black text-lg ${isLow ? 'text-red-600' : 'text-slate-700'}`}>{item.closedCount}</span>
-                    <button onClick={() => updateCount(item.id, 'closedCount', 1)} className="p-1 hover:bg-slate-100 rounded-lg text-indigo-600 transition-colors"><Plus size={14} /></button>
-                  </div>
-                </div>
-                <div className="bg-white/60 backdrop-blur-sm p-3 rounded-2xl border border-slate-100 shadow-sm">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Abiertos</p>
-                  <div className="flex items-center justify-between">
-                    <button onClick={() => updateCount(item.id, 'openCount', -1)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"><Minus size={14} /></button>
-                    <span className="font-black text-lg text-slate-700">{item.openCount}</span>
-                    <button onClick={() => updateCount(item.id, 'openCount', 1)} className="p-1 hover:bg-slate-100 rounded-lg text-indigo-600 transition-colors"><Plus size={14} /></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {sortedStock.some(checkAlert) && (
-        <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3">
-          <AlertCircle className="text-red-500" size={20} />
-          <p className="text-red-800 text-sm font-medium">
-            ¡Che Maru! Hay colores que están por debajo del stock mínimo. Aparecen arriba de todo marcados en rojo.
-          </p>
+      <div className="flex-1 bg-white rounded-[1.5rem] border border-slate-100 shadow-xl overflow-hidden flex flex-col">
+        <div className="overflow-y-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 shadow-sm">
+              <tr>
+                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Filamento</th>
+                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Cerrados</th>
+                <th className="px-4 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Abiertos</th>
+                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredStock.map((item) => {
+                const low = checkAlert(item);
+                const min = getMin(item);
+                return (
+                  <tr key={item.id} className={`group hover:bg-slate-50/80 transition-all ${low ? 'bg-orange-50/30' : ''}`}>
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-9 h-9 rounded-xl shadow-inner border border-black/5 shrink-0 flex items-center justify-center"
+                          style={{ backgroundColor: getHexColor(item.color) }}
+                        >
+                          <Droplet size={14} className={isDark(item.color) ? 'text-white/30' : 'text-black/10'} />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 uppercase text-xs tracking-tight leading-none mb-1">{item.color}</p>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{item.type}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-center gap-3">
+                        <button onClick={() => updateCount(item.id, 'closedCount', -1)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-white rounded-lg transition-colors"><Minus size={12} /></button>
+                        <div className="flex flex-col items-center min-w-[2.5rem]">
+                          <span className={`font-black text-base leading-none ${low ? 'text-orange-600' : 'text-slate-900'}`}>{item.closedCount}</span>
+                          <span className="text-[7px] text-slate-400 font-bold uppercase mt-1">Min: {min}</span>
+                        </div>
+                        <button onClick={() => updateCount(item.id, 'closedCount', 1)} className="p-1.5 text-orange-600 hover:bg-white rounded-lg transition-colors shadow-sm"><Plus size={12} /></button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <button onClick={() => updateCount(item.id, 'openCount', -1)} className="p-1.5 text-slate-300 hover:bg-white rounded-lg transition-colors"><Minus size={12} /></button>
+                        <span className="font-black text-base text-slate-900 leading-none min-w-[1.5rem]">{item.openCount}</span>
+                        <button onClick={() => updateCount(item.id, 'openCount', 1)} className="p-1.5 text-orange-600 hover:bg-white rounded-lg transition-colors shadow-sm"><Plus size={12} /></button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3.5 text-right">
+                      {low ? (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg shadow-orange-600/20 animate-pulse-soft">
+                          <AlertCircle size={10} /> Reponer
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1 px-2 py-1 text-green-600 text-[8px] font-black uppercase tracking-widest">
+                          OK <ChevronRight size={10} className="opacity-30" />
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };

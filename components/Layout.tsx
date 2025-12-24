@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Package, ClipboardList, Calculator, MessageSquare, Menu, X, Zap } from 'lucide-react';
+import { Package, ClipboardList, Calculator, MessageSquare, Menu } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,32 +19,30 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
       {/* Mobile Backdrop */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden" 
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transition-transform duration-300 lg:static lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
-          <div className="p-6 flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-xl text-white">
-              <Zap size={24} fill="white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 leading-tight">Sinapsis 3D</h1>
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Bariloche</p>
+          <div className="p-8 border-b border-slate-900">
+            <div className="flex flex-col items-center gap-4">
+              <img 
+                src="/sinapsis3dlogo.png" 
+                alt="Sinapsis 3D Logo" 
+                className="w-40 h-auto drop-shadow-2xl"
+              />
+              <div className="text-center">
+                <h1 className="text-xl font-black text-white leading-tight tracking-tighter uppercase italic">SINAPSIS 3D</h1>
+                <p className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.4em] mt-1 opacity-80">BARILOCHE</p>
+              </div>
             </div>
           </div>
 
-          <nav className="flex-1 px-4 space-y-2 mt-4">
+          <nav className="flex-1 px-6 space-y-2 mt-8">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -54,28 +52,21 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                     setActiveTab(item.id);
                     setIsSidebarOpen(false);
                   }}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200
-                    ${activeTab === item.id 
-                      ? 'bg-indigo-50 text-indigo-700' 
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
-                  `}
+                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] font-black uppercase tracking-widest text-[11px] transition-all duration-300 ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-600/40 translate-x-1' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
                 >
-                  <Icon size={20} className={activeTab === item.id ? 'text-indigo-600' : ''} />
+                  <Icon size={18} />
                   {item.label}
                 </button>
               );
             })}
           </nav>
 
-          <div className="p-4 border-t border-slate-100">
-            <div className="bg-slate-50 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Usuario</p>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                  M
-                </div>
-                <span className="text-sm font-medium text-slate-700">Maru</span>
+          <div className="p-6">
+            <div className="bg-slate-900/50 rounded-[2rem] p-5 border border-slate-800 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-orange-600 flex items-center justify-center text-white font-black text-xs shadow-inner shadow-orange-900/40">S3D</div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">Admin</span>
+                <span className="text-[9px] text-slate-500 font-bold uppercase">Online</span>
               </div>
             </div>
           </div>
@@ -83,24 +74,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 relative">
-        <header className="h-16 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md border-b border-slate-200 lg:hidden">
-          <div className="flex items-center gap-2">
-            <Zap size={20} className="text-indigo-600" />
-            <span className="font-bold">Sinapsis 3D</span>
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
+        <header className="h-20 flex items-center justify-between px-8 bg-white border-b border-slate-200 lg:hidden">
+          <div className="flex items-center gap-4">
+            <img src="/sinapsis3dlogo.png" alt="Logo" className="h-10 w-auto" />
+            <span className="font-black text-slate-900 uppercase text-xs tracking-tighter">SINAPSIS 3D</span>
           </div>
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg"
-          >
-            <Menu size={24} />
-          </button>
+          <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-slate-950 bg-slate-100 rounded-2xl active:scale-95 transition-transform"><Menu size={24} /></button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <div className="max-w-5xl mx-auto h-full">
-            {children}
-          </div>
+        <div className="flex-1 overflow-y-auto p-6 lg:p-12">
+          <div className="max-w-6xl mx-auto h-full">{children}</div>
         </div>
       </main>
     </div>
