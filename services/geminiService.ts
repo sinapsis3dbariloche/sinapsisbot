@@ -2,8 +2,6 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
 const getStockDeclaration: FunctionDeclaration = {
   name: 'get_stock',
   description: 'Obtiene la lista actual de stock de filamentos (rollos cerrados y abiertos).',
@@ -46,14 +44,17 @@ const addOrderDeclaration: FunctionDeclaration = {
 };
 
 export class SinapsisBotService {
-  private chat;
-
   constructor(
     private stock: any[], 
     private orders: any[], 
     private onStateChange: (newState: { stock?: any[], orders?: any[] }) => void
-  ) {
-    this.chat = ai.chats.create({
+  ) {}
+
+  async sendMessage(message: string, history: any[] = []) {
+    // Creamos la instancia justo antes de usarla para asegurar que tome la API_KEY actual
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    
+    const chat = ai.chats.create({
       model: 'gemini-3-flash-preview',
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -67,10 +68,12 @@ export class SinapsisBotService {
         }]
       }
     });
-  }
 
-  async sendMessage(message: string) {
-    const result = await this.chat.sendMessage({ message });
+    // Podríamos reconstruir el historial aquí si fuera necesario, 
+    // por ahora el chat de la SDK lo maneja en la sesión si se mantiene el objeto,
+    // pero para despliegues serverless como Vercel, es mejor recrearlo o usar sendMessage directo.
+
+    const result = await chat.sendMessage({ message });
     
     if (result.functionCalls) {
       const toolResponses: any[] = [];
@@ -117,7 +120,8 @@ export class SinapsisBotService {
         });
       }
 
-      const finalResult = await this.chat.sendMessage({
+      // Enviamos las respuestas de las funciones de vuelta al modelo
+      const finalResult = await chat.sendMessage({
         message: "Operación completada con éxito." 
       });
 
