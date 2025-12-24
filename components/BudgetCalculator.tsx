@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Scale, TrendingUp, Info, Save, Cpu, Clock, Palette, Brush } from 'lucide-react';
+import { Scale, TrendingUp, Save, Cpu, Clock, Palette, Brush, Tag } from 'lucide-react';
 import { FilamentType } from '../types';
 
 interface BudgetCalculatorProps {
@@ -21,6 +21,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
   const [weight, setWeight] = useState<number | ''>('');
   const [designMinutes, setDesignMinutes] = useState<number | ''>(0);
   const [postProcessMinutes, setPostProcessMinutes] = useState<number | ''>(0);
+  const [modelCost, setModelCost] = useState<number | ''>(0);
   const [clientType, setClientType] = useState<'minorista' | 'mayorista'>('minorista');
   const [filamentType, setFilamentType] = useState<FilamentType>(FilamentType.PLA);
   
@@ -55,7 +56,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
   };
 
   const calculate = () => {
-    if (!weight && !designMinutes && !postProcessMinutes) return null;
+    if (!weight && !designMinutes && !postProcessMinutes && !modelCost) return null;
     
     // Impresión
     let printingPrice = 0;
@@ -67,15 +68,18 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
       printingPrice = Math.round((baseCost * multiplier) / 100) * 100;
     }
 
-    // Diseño y Post
+    // Tiempos y Gastos Extra
     const designCost = (localDesignPrice / 60) * (Number(designMinutes) || 0);
     const postProcessCost = (localPostPrice / 60) * (Number(postProcessMinutes) || 0);
-    const finalPrice = printingPrice + designCost + postProcessCost;
+    const totalModelCost = Number(modelCost) || 0;
+    
+    const finalPrice = printingPrice + designCost + postProcessCost + totalModelCost;
 
     return {
       printingPrice,
       designCost,
       postProcessCost,
+      totalModelCost,
       finalPrice
     };
   };
@@ -90,7 +94,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
         </div>
         <div>
           <h2 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Presupuestador Avanzado</h2>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Variables: Impresión + Diseño + Post-Procesado</p>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Impresión + Diseño + Post + Costos Externos</p>
         </div>
       </div>
 
@@ -98,10 +102,10 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
             
-            {/* Tiempos y Peso */}
+            {/* Tiempos y Peso (Entradas de volumen) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-3">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Peso (g)</label>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Peso Pieza (g)</label>
                 <div className="relative">
                   <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <input
@@ -114,7 +118,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Diseño (m)</label>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Diseño (min)</label>
                 <div className="relative">
                   <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <input
@@ -127,7 +131,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Post (m)</label>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Post-Procesado (min)</label>
                 <div className="relative">
                   <Brush className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <input
@@ -141,7 +145,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
               </div>
             </div>
 
-            {/* Selectores */}
+            {/* Selectores de Perfil */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Material</label>
@@ -161,7 +165,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
                 </div>
               </div>
               <div className="space-y-4">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Cliente</label>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Perfil de Venta</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setClientType('minorista')}
@@ -179,46 +183,61 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
               </div>
             </div>
 
-            {/* Costos Base */}
-            <div className="pt-6 border-t border-slate-50 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
-                  {filamentType} $/kg <Save size={8} className="text-green-500" />
-                </label>
-                <input
-                  type="number"
-                  value={activePrice}
-                  onChange={(e) => handlePriceChange(Number(e.target.value), filamentType === FilamentType.PLA ? 'pla' : 'petg')}
-                  className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 font-black text-xs text-slate-900"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
-                  Diseño $/hr <Save size={8} className="text-green-500" />
-                </label>
-                <input
-                  type="number"
-                  value={localDesignPrice}
-                  onChange={(e) => handlePriceChange(Number(e.target.value), 'design')}
-                  className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 font-black text-xs text-slate-900"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
-                  Post $/hr <Save size={8} className="text-green-500" />
-                </label>
-                <input
-                  type="number"
-                  value={localPostPrice}
-                  onChange={(e) => handlePriceChange(Number(e.target.value), 'post')}
-                  className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 font-black text-xs text-slate-900"
-                />
+            {/* COSTOS Y PRECIOS (Agrupados aquí) */}
+            <div className="pt-6 border-t border-slate-50">
+              <label className="block text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] mb-6">Configuración de Precios y Cargos</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                    {filamentType} $/kg <Save size={8} className="text-green-500" />
+                  </label>
+                  <input
+                    type="number"
+                    value={activePrice}
+                    onChange={(e) => handlePriceChange(Number(e.target.value), filamentType === FilamentType.PLA ? 'pla' : 'petg')}
+                    className="w-full bg-slate-50 border-none rounded-lg px-3 py-3 font-black text-xs text-slate-900 focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                    Diseño $/hr <Save size={8} className="text-green-500" />
+                  </label>
+                  <input
+                    type="number"
+                    value={localDesignPrice}
+                    onChange={(e) => handlePriceChange(Number(e.target.value), 'design')}
+                    className="w-full bg-slate-50 border-none rounded-lg px-3 py-3 font-black text-xs text-slate-900 focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                    Post $/hr <Save size={8} className="text-green-500" />
+                  </label>
+                  <input
+                    type="number"
+                    value={localPostPrice}
+                    onChange={(e) => handlePriceChange(Number(e.target.value), 'post')}
+                    className="w-full bg-slate-50 border-none rounded-lg px-3 py-3 font-black text-xs text-slate-900 focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] font-black text-orange-600 uppercase tracking-widest flex items-center justify-between">
+                    Modelo ($) <Tag size={8} />
+                  </label>
+                  <input
+                    type="number"
+                    value={modelCost}
+                    onChange={(e) => setModelCost(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full bg-orange-50 border-none rounded-lg px-3 py-3 font-black text-xs text-orange-700 focus:ring-1 focus:ring-orange-500"
+                    placeholder="Cults3D..."
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* RESULTADOS */}
+        {/* PANEL DE RESULTADOS */}
         <div className="lg:col-span-5">
           <div className="bg-orange-600 rounded-[3rem] p-10 text-white shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
@@ -229,28 +248,33 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
                 <span className="font-black uppercase tracking-[0.2em] text-[9px]">Presupuesto Final</span>
               </div>
 
-              {results && (weight || designMinutes || postProcessMinutes) ? (
+              {results && (Number(weight) || Number(designMinutes) || Number(postProcessMinutes) || Number(modelCost)) ? (
                 <div className="space-y-6">
                   <div className="space-y-3 border-b border-white/10 pb-6">
-                    {/* Convert weight to number for comparison to fix operator '>' cannot be applied error */}
                     {Number(weight) > 0 && (
                       <div className="flex justify-between items-center opacity-80">
                         <span className="text-[10px] font-bold uppercase tracking-widest">Impresión ({weight}g)</span>
                         <span className="font-black">${results.printingPrice.toLocaleString('es-AR')}</span>
                       </div>
                     )}
-                    {/* Convert designMinutes to number for comparison to fix operator '>' cannot be applied error */}
                     {Number(designMinutes) > 0 && (
                       <div className="flex justify-between items-center opacity-80">
                         <span className="text-[10px] font-bold uppercase tracking-widest">Diseño ({designMinutes}m)</span>
                         <span className="font-black">${Math.round(results.designCost).toLocaleString('es-AR')}</span>
                       </div>
                     )}
-                    {/* Convert postProcessMinutes to number for comparison to fix operator '>' cannot be applied error */}
                     {Number(postProcessMinutes) > 0 && (
                       <div className="flex justify-between items-center opacity-80">
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Post ({postProcessMinutes}m)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Post-procesado ({postProcessMinutes}m)</span>
                         <span className="font-black">${Math.round(results.postProcessCost).toLocaleString('es-AR')}</span>
+                      </div>
+                    )}
+                    {Number(modelCost) > 0 && (
+                      <div className="flex justify-between items-center border-t border-white/5 pt-3 mt-3 text-orange-100 italic">
+                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                           Archivo / Modelo
+                        </span>
+                        <span className="font-black">${Number(modelCost).toLocaleString('es-AR')}</span>
                       </div>
                     )}
                   </div>
@@ -265,7 +289,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
               ) : (
                 <div className="py-20 text-center opacity-40">
                   <Scale size={40} className="mx-auto mb-4" />
-                  <p className="text-[9px] font-black uppercase tracking-widest">Esperando datos...</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest">Esperando datos operativos...</p>
                 </div>
               )}
             </div>
@@ -275,15 +299,16 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
                 onClick={() => {
                   const items = [];
                   if (weight) items.push(`- Impresión (${weight}g ${filamentType}): $${results.printingPrice.toLocaleString('es-AR')}`);
-                  if (designMinutes) items.push(`- Diseño (${designMinutes}min): $${Math.round(results.designCost).toLocaleString('es-AR')}`);
-                  if (postProcessMinutes) items.push(`- Post-procesado (${postProcessMinutes}min): $${Math.round(results.postProcessCost).toLocaleString('es-AR')}`);
+                  if (Number(designMinutes) > 0) items.push(`- Diseño (${designMinutes}min): $${Math.round(results.designCost).toLocaleString('es-AR')}`);
+                  if (Number(postProcessMinutes) > 0) items.push(`- Post-procesado (${postProcessMinutes}min): $${Math.round(results.postProcessCost).toLocaleString('es-AR')}`);
+                  if (Number(modelCost) > 0) items.push(`- Costo Archivo (Cults3D/Otros): $${Number(modelCost).toLocaleString('es-AR')}`);
                   const text = `Sinapsis 3D - Presupuesto\n${items.join('\n')}\nTOTAL: $${Math.round(results.finalPrice).toLocaleString('es-AR')}`;
                   navigator.clipboard.writeText(text);
-                  alert('¡Copiado! 🚀');
+                  alert('¡Presupuesto copiado al portapapeles! 🚀');
                 }}
                 className="relative z-10 w-full bg-white text-orange-600 font-black py-5 rounded-[1.5rem] mt-8 hover:scale-[1.02] active:scale-95 shadow-xl text-[10px] uppercase tracking-widest"
               >
-                Copiar Presupuesto
+                Copiar Presupuesto Detallado
               </button>
             )}
           </div>
