@@ -2,7 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch } from 'firebase/firestore';
 import { StockItem, Order } from '../types';
-import { INITIAL_STOCK, INITIAL_ORDERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE } from '../constants';
+import { INITIAL_STOCK, INITIAL_ORDERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
 // CONFIGURACIÓN DE FIREBASE - SINAPSIS 3D
 const firebaseConfig = {
@@ -44,7 +44,8 @@ export const subscribeToSettings = (callback: (settings: any) => void) => {
       setDoc(settingsRef, { 
         plaPrice: DEFAULT_PLA_PRICE,
         petgPrice: DEFAULT_PETG_PRICE,
-        designPrice: DEFAULT_DESIGN_PRICE
+        designPrice: DEFAULT_DESIGN_PRICE,
+        postProcessPrice: DEFAULT_POST_PROCESS_PRICE
       });
     }
   });
@@ -79,7 +80,8 @@ const initializeDatabase = async () => {
   batch.set(configRef, { 
     plaPrice: DEFAULT_PLA_PRICE,
     petgPrice: DEFAULT_PETG_PRICE,
-    designPrice: DEFAULT_DESIGN_PRICE
+    designPrice: DEFAULT_DESIGN_PRICE,
+    postProcessPrice: DEFAULT_POST_PROCESS_PRICE
   });
   await batch.commit();
 };

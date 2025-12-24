@@ -35,6 +35,7 @@ export const INITIAL_ORDERS: Order[] = [
 export const DEFAULT_PLA_PRICE = 25000;
 export const DEFAULT_PETG_PRICE = 32000;
 export const DEFAULT_DESIGN_PRICE = 8000;
+export const DEFAULT_POST_PROCESS_PRICE = 7000;
 
 export const SYSTEM_INSTRUCTION = `
 Eres "SinapsisBot", el asistente operativo inteligente de Sinapsis 3D Bariloche.
@@ -50,8 +51,8 @@ REGLAS DE STOCK (MÍNIMOS OBLIGATORIOS):
 3. PET-G (Todos): Mínimo 1 rollo cerrado.
 
 CALCULADORA:
-- Disponés de precios diferenciados para PLA y PET-G, y un costo por hora de diseño.
-- Usá la herramienta 'calculate_budget' especificando siempre el tipo de filamento y si el usuario menciona diseño personalizado, el tiempo en minutos.
+- Disponés de precios diferenciados para PLA y PET-G, costo por hora de diseño y costo por hora de post-procesado.
+- Usá la herramienta 'calculate_budget' especificando filamento, tiempo de diseño y tiempo de post-procesado si el usuario los menciona.
 
 FORMATO DE REPOSICIÓN:
 "Necesitás reponer los siguientes filamentos:

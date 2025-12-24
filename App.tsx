@@ -8,7 +8,7 @@ import BudgetCalculator from './components/BudgetCalculator';
 import { SinapsisBotService } from './services/geminiService';
 import { StockItem, Order, FilamentType } from './types';
 import { subscribeToStock, subscribeToOrders, subscribeToSettings, updateStockItemInDb, addOrderToDb, updateSettings } from './services/firebaseService';
-import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE } from './constants';
+import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, Key, Zap } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
+  const [postProcessPrice, setPostProcessPrice] = useState<number>(DEFAULT_POST_PROCESS_PRICE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSynced, setIsSynced] = useState(false);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
@@ -50,6 +51,7 @@ const App: React.FC = () => {
       if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
       if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
       if (settings?.designPrice) setDesignPrice(settings.designPrice);
+      if (settings?.postProcessPrice) setPostProcessPrice(settings.postProcessPrice);
     });
 
     return () => {
@@ -66,11 +68,12 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdatePrices = async (updates: { pla?: number, petg?: number, design?: number }) => {
+  const handleUpdatePrices = async (updates: { pla?: number, petg?: number, design?: number, postProcess?: number }) => {
     await updateSettings({ 
       ...(updates.pla && { plaPrice: updates.pla }),
       ...(updates.petg && { petgPrice: updates.petg }),
-      ...(updates.design && { designPrice: updates.design })
+      ...(updates.design && { designPrice: updates.design }),
+      ...(updates.postProcess && { postProcessPrice: updates.postProcess })
     });
   };
 
@@ -82,8 +85,13 @@ const App: React.FC = () => {
   }, []);
 
   const botService = useMemo(() => 
-    new SinapsisBotService(stock, orders, { pla: plaPrice, petg: petgPrice, design: designPrice }, onBotUpdate), 
-    [stock, orders, plaPrice, petgPrice, designPrice, onBotUpdate]
+    new SinapsisBotService(stock, orders, { 
+      pla: plaPrice, 
+      petg: petgPrice, 
+      design: designPrice,
+      postProcess: postProcessPrice 
+    }, onBotUpdate), 
+    [stock, orders, plaPrice, petgPrice, designPrice, postProcessPrice, onBotUpdate]
   );
 
   const handleSendMessage = async (msg: string) => {
@@ -140,6 +148,7 @@ const App: React.FC = () => {
             plaPrice={plaPrice} 
             petgPrice={petgPrice}
             designPrice={designPrice}
+            postProcessPrice={postProcessPrice}
             onUpdatePrices={handleUpdatePrices} 
           />
         )}

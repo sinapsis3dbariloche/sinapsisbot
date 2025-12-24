@@ -25,14 +25,15 @@ const updateStockDeclaration: FunctionDeclaration = {
 
 const calculateBudgetDeclaration: FunctionDeclaration = {
   name: 'calculate_budget',
-  description: 'Calcula el precio de impresión basándose en el peso, tipo de cliente, material y tiempo de diseño.',
+  description: 'Calcula el precio de impresión basándose en el peso, tipo de cliente, material, tiempo de diseño y post-procesado.',
   parameters: {
     type: Type.OBJECT,
     properties: {
       weight: { type: Type.NUMBER },
       clientType: { type: Type.STRING, enum: ['minorista', 'mayorista'] },
       filamentType: { type: Type.STRING, enum: ['PLA', 'PET-G'] },
-      designMinutes: { type: Type.NUMBER, description: 'Tiempo de diseño personalizado en minutos. Por defecto 0.' }
+      designMinutes: { type: Type.NUMBER, description: 'Tiempo de diseño personalizado en minutos.' },
+      postProcessMinutes: { type: Type.NUMBER, description: 'Tiempo de post-procesado (lijado, pintado) en minutos.' }
     },
     required: ['weight', 'clientType', 'filamentType']
   }
@@ -42,7 +43,7 @@ export class SinapsisBotService {
   constructor(
     private stock: any[], 
     private orders: any[], 
-    private prices: { pla: number, petg: number, design: number },
+    private prices: { pla: number, petg: number, design: number, postProcess: number },
     private onStateChange: (newState: { stock?: any[], orders?: any[] }) => void
   ) {}
 
@@ -79,7 +80,7 @@ export class SinapsisBotService {
             }).join('\n');
             responseData = { result: stockReport };
           } else if (call.name === 'calculate_budget') {
-            const { weight, clientType, filamentType, designMinutes = 0 } = call.args as any;
+            const { weight, clientType, filamentType, designMinutes = 0, postProcessMinutes = 0 } = call.args as any;
             const currentPrice = filamentType === 'PET-G' ? this.prices.petg : this.prices.pla;
             
             const costPerGram = currentPrice / 1000;
@@ -89,14 +90,16 @@ export class SinapsisBotService {
             const printingPrice = Math.round((baseCost * multiplier) / 100) * 100;
             
             const designCost = (this.prices.design / 60) * designMinutes;
-            const finalPrice = printingPrice + designCost;
+            const postProcessCost = (this.prices.postProcess / 60) * postProcessMinutes;
+            const finalPrice = printingPrice + designCost + postProcessCost;
             
             responseData = { 
               result: { 
                 finalPrice, 
                 printingPrice,
                 designCost,
-                details: `Calculado para ${weight}g (${clientType}) en ${filamentType} con ${designMinutes} min de diseño. Costo $/kg: ${currentPrice}, $/hr diseño: ${this.prices.design}` 
+                postProcessCost,
+                details: `Calculado para ${weight}g (${clientType}) en ${filamentType}. Diseño: ${designMinutes}m, Post: ${postProcessMinutes}m. Costos $/hr -> Diseño: ${this.prices.design}, Post: ${this.prices.postProcess}` 
               } 
             };
           }
@@ -109,7 +112,7 @@ export class SinapsisBotService {
         }
 
         const finalResult = await chat.sendMessage({
-          message: "Generá la respuesta final con el presupuesto calculado detallando el costo de impresión y el costo de diseño si corresponde."
+          message: "Generá la respuesta final detallando: Impresión, Diseño (si aplica), Post-procesado (si aplica) y el total final."
         });
         return finalResult.text;
       }
