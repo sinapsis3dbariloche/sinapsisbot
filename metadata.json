@@ -1,0 +1,7 @@
+{
+  "name": "SinapsisBot - 3D Printing Assistant",
+  "description": "An intelligent assistant for Sinapsis 3D in Bariloche, helping Maru manage stock, calculate budgets, and organize the production queue with an Argentinian personality.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
