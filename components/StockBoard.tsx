@@ -24,6 +24,10 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
     return (item.color === "Blanco" || item.color === "Negro") ? 3 : 1;
   };
 
+  const isCriticalColor = (color: string) => {
+    return color === "Blanco" || color === "Negro";
+  };
+
   const filteredStock = stock
     .filter(item => item.type === activeType)
     .filter(item => item.color.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -35,13 +39,22 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
       if (aAlert && !bAlert) return -1;
       if (!aAlert && bAlert) return 1;
 
-      // 2. Si ambos están en el mismo grupo (ambos alerta o ambos OK),
-      // ordenar por cantidad de abiertos (menor a mayor)
+      // 2. Si ambos están en alerta, Blanco y Negro tienen prioridad absoluta
+      if (aAlert && bAlert) {
+        const aIsCrit = isCriticalColor(a.color);
+        const bIsCrit = isCriticalColor(b.color);
+        
+        if (aIsCrit && !bIsCrit) return -1;
+        if (!aIsCrit && bIsCrit) return 1;
+      }
+
+      // 3. Si ambos están en el mismo grupo de prioridad (ambos alerta crítica, 
+      // ambos alerta normal, o ambos OK), ordenar por cantidad de abiertos (menor a mayor)
       if (a.openCount !== b.openCount) {
         return a.openCount - b.openCount;
       }
 
-      // 3. Si tienen la misma cantidad de abiertos, orden alfabético
+      // 4. Si tienen la misma cantidad de abiertos, orden alfabético
       return a.color.localeCompare(b.color);
     });
 
