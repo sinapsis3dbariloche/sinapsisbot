@@ -1,6 +1,6 @@
 
-import React from 'react';
 import { Package, ClipboardList, Calculator, MessageSquare, Menu } from 'lucide-react';
+import React from 'react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -28,15 +28,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
-          <div className="p-8 border-b border-slate-900">
-            <div className="flex flex-col items-center gap-4">
-              <img 
-                src="/sinapsis3dlogo.png" 
-                alt="Sinapsis 3D Logo" 
-                className="w-40 h-auto drop-shadow-2xl"
-              />
+          <div className="p-10 border-b border-slate-900">
+            <div className="flex flex-col items-center">
               <div className="text-center">
-                <h1 className="text-xl font-black text-white leading-tight tracking-tighter uppercase italic">SINAPSIS 3D</h1>
+                <h1 className="text-2xl font-black text-white leading-tight tracking-tighter uppercase italic">SINAPSIS 3D</h1>
                 <p className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.4em] mt-1 opacity-80">BARILOCHE</p>
               </div>
             </div>
@@ -75,10 +70,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
-        <header className="h-20 flex items-center justify-between px-8 bg-white border-b border-slate-200 lg:hidden">
-          <div className="flex items-center gap-4">
-            <img src="/sinapsis3dlogo.png" alt="Logo" className="h-10 w-auto" />
-            <span className="font-black text-slate-900 uppercase text-xs tracking-tighter">SINAPSIS 3D</span>
+        <header className="h-20 flex items-center justify-between px-8 bg-white border-b border-slate-200 lg:hidden shrink-0">
+          <div className="flex items-center">
+            <span className="font-black text-slate-900 uppercase text-sm tracking-tighter italic">SINAPSIS 3D</span>
           </div>
           <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-slate-950 bg-slate-100 rounded-2xl active:scale-95 transition-transform"><Menu size={24} /></button>
         </header>

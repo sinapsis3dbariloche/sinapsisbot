@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
 import { StockItem, FilamentType } from '../types';
-import { Droplet, Plus, Minus, AlertCircle, Search, X, Layers, ChevronRight } from 'lucide-react';
+import { Droplet, Plus, Minus, AlertCircle, Search, Layers, ChevronRight, RotateCcw } from 'lucide-react';
 
 interface StockBoardProps {
   stock: StockItem[];
   onUpdateStock?: (id: string, updates: Partial<StockItem>) => void;
+  onResetAll?: () => void;
 }
 
-const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
+const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock, onResetAll }) => {
   const [activeType, setActiveType] = useState<FilamentType>(FilamentType.PLA);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -40,6 +41,12 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
     onUpdateStock(id, { [field]: Math.max(0, item[field] + delta) });
   };
 
+  const handleResetClick = () => {
+    if (window.confirm('⚠️ ¿Estás seguro? Esta acción pondrá TODOS los contadores de stock en CERO. Esto es útil para iniciar un control de inventario desde cero.')) {
+      if (onResetAll) onResetAll();
+    }
+  };
+
   return (
     <div className="space-y-4 max-w-5xl mx-auto h-full flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm shrink-0">
@@ -54,6 +61,16 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3">
+          {onResetAll && (
+            <button 
+              onClick={handleResetClick}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm"
+            >
+              <RotateCcw size={12} />
+              Reiniciar Stock
+            </button>
+          )}
+
           <div className="relative w-full sm:w-56">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
             <input 

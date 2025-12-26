@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { StockItem, Order } from '../types';
 import { INITIAL_STOCK, INITIAL_ORDERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
@@ -59,6 +59,16 @@ export const updateSettings = async (settings: any) => {
 export const updateStockItemInDb = async (item: StockItem) => {
   const docRef = doc(db, 'stock', item.id);
   await setDoc(docRef, item, { merge: true });
+};
+
+export const resetAllStockInDb = async () => {
+  const batch = writeBatch(db);
+  const snapshot = await getDocs(collection(db, 'stock'));
+  snapshot.docs.forEach(document => {
+    const ref = doc(db, 'stock', document.id);
+    batch.update(ref, { closedCount: 0, openCount: 0 });
+  });
+  await batch.commit();
 };
 
 export const addOrderToDb = async (order: Order) => {

@@ -7,7 +7,7 @@ import OrderQueue from './components/OrderQueue';
 import BudgetCalculator from './components/BudgetCalculator';
 import { SinapsisBotService } from './services/geminiService';
 import { StockItem, Order, FilamentType } from './types';
-import { subscribeToStock, subscribeToOrders, subscribeToSettings, updateStockItemInDb, addOrderToDb, updateSettings } from './services/firebaseService';
+import { subscribeToStock, subscribeToOrders, subscribeToSettings, updateStockItemInDb, addOrderToDb, updateSettings, resetAllStockInDb } from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, Key, Zap } from 'lucide-react';
 
@@ -66,6 +66,10 @@ const App: React.FC = () => {
     if (item) {
       await updateStockItemInDb({ ...item, ...updates });
     }
+  };
+
+  const handleResetAllStock = async () => {
+    await resetAllStockInDb();
   };
 
   const handleUpdatePrices = async (updates: { pla?: number, petg?: number, design?: number, postProcess?: number }) => {
@@ -141,7 +145,7 @@ const App: React.FC = () => {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nube OK</span>
         </div>
         {activeTab === 'chat' && <ChatBot onSendMessage={handleSendMessage} />}
-        {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
+        {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} onResetAll={handleResetAllStock} />}
         {activeTab === 'queue' && <OrderQueue orders={orders} />}
         {activeTab === 'calc' && (
           <BudgetCalculator 
