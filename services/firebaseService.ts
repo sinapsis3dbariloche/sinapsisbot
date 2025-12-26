@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 import { StockItem, Order } from '../types';
 import { INITIAL_STOCK, INITIAL_ORDERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
@@ -59,6 +59,11 @@ export const updateSettings = async (settings: any) => {
 export const updateStockItemInDb = async (item: StockItem) => {
   const docRef = doc(db, 'stock', item.id);
   await setDoc(docRef, item, { merge: true });
+};
+
+export const deleteStockItemFromDb = async (id: string) => {
+  const docRef = doc(db, 'stock', id);
+  await deleteDoc(docRef);
 };
 
 export const resetAllStockInDb = async () => {

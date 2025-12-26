@@ -18,6 +18,8 @@ export interface StockItem {
   type: FilamentType;
   closedCount: number;
   openCount: number;
+  minClosed?: number;
+  hexColor?: string;
 }
 
 export interface Order {

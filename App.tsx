@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import StockBoard from './components/StockBoard';
+import StockManager from './components/StockManager';
 import OrderQueue from './components/OrderQueue';
 import BudgetCalculator from './components/BudgetCalculator';
 import { StockItem, Order } from './types';
-import { subscribeToStock, subscribeToOrders, subscribeToSettings, updateStockItemInDb, updateSettings, resetAllStockInDb } from './services/firebaseService';
+import { subscribeToStock, subscribeToOrders, subscribeToSettings, updateStockItemInDb, updateSettings, resetAllStockInDb, deleteStockItemFromDb } from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 
@@ -53,6 +54,14 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAddStockItem = async (item: StockItem) => {
+    await updateStockItemInDb(item);
+  };
+
+  const handleDeleteStockItem = async (id: string) => {
+    await deleteStockItemFromDb(id);
+  };
+
   const handleResetAllStock = async () => {
     if (window.confirm('⚠️ ¿Estás seguro? Esta acción pondrá TODOS los contadores de stock en CERO. Esto es útil para iniciar un control de inventario desde cero.')) {
       await resetAllStockInDb();
@@ -86,8 +95,18 @@ const App: React.FC = () => {
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nube OK</span>
         </div>
+        
         {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
         
+        {activeTab === 'stock-edit' && (
+          <StockManager 
+            stock={stock} 
+            onAdd={handleAddStockItem}
+            onUpdate={handleUpdateStockItem}
+            onDelete={handleDeleteStockItem}
+          />
+        )}
+
         {activeTab === 'stock-reset' && (
           <div className="max-w-2xl mx-auto py-20 px-6">
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl p-12 text-center space-y-8 overflow-hidden relative">

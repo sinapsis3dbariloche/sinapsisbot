@@ -1,5 +1,5 @@
 
-import { Package, ClipboardList, Calculator, Menu, RotateCcw } from 'lucide-react';
+import { Package, ClipboardList, Calculator, Menu, RotateCcw, Settings2 } from 'lucide-react';
 import React from 'react';
 
 interface LayoutProps {
@@ -14,6 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const navItems = [
     { id: 'calc', label: 'Calculadora', icon: Calculator },
     { id: 'stock', label: 'Stock', icon: Package },
+    { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
     { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
     { id: 'queue', label: 'Producción', icon: ClipboardList },
   ];

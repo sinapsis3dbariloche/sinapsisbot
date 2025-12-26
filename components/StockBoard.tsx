@@ -13,12 +13,13 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const checkAlert = (item: StockItem) => {
-    if (item.type === FilamentType.PETG) return item.closedCount < 1;
-    const isCritical = item.color === "Blanco" || item.color === "Negro";
-    return item.closedCount < (isCritical ? 3 : 1);
+    const min = getMin(item);
+    return item.closedCount < min;
   };
 
   const getMin = (item: StockItem) => {
+    if (item.minClosed !== undefined) return item.minClosed;
+    // Fallback por si hay datos viejos
     if (item.type === FilamentType.PETG) return 1;
     return (item.color === "Blanco" || item.color === "Negro") ? 3 : 1;
   };
@@ -29,8 +30,18 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
     .sort((a, b) => {
       const aAlert = checkAlert(a);
       const bAlert = checkAlert(b);
+
+      // 1. Prioridad: Los que tienen alerta van primero
       if (aAlert && !bAlert) return -1;
       if (!aAlert && bAlert) return 1;
+
+      // 2. Si ambos están en el mismo grupo (ambos alerta o ambos OK),
+      // ordenar por cantidad de abiertos (menor a mayor)
+      if (a.openCount !== b.openCount) {
+        return a.openCount - b.openCount;
+      }
+
+      // 3. Si tienen la misma cantidad de abiertos, orden alfabético
       return a.color.localeCompare(b.color);
     });
 
@@ -97,15 +108,16 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
               {filteredStock.map((item) => {
                 const low = checkAlert(item);
                 const min = getMin(item);
+                const hexColor = item.hexColor || getFallbackHex(item.color);
                 return (
                   <tr key={item.id} className={`group hover:bg-slate-50/80 transition-all ${low ? 'bg-orange-50/30' : ''}`}>
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-3">
                         <div 
                           className="w-9 h-9 rounded-xl shadow-inner border border-black/5 shrink-0 flex items-center justify-center"
-                          style={{ backgroundColor: getHexColor(item.color) }}
+                          style={{ backgroundColor: hexColor }}
                         >
-                          <Droplet size={14} className={isDark(item.color) ? 'text-white/30' : 'text-black/10'} />
+                          <Droplet size={14} className={isDark(hexColor) ? 'text-white/30' : 'text-black/10'} />
                         </div>
                         <div>
                           <p className="font-black text-slate-900 uppercase text-xs tracking-tight leading-none mb-1">{item.color}</p>
@@ -152,7 +164,7 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
   );
 };
 
-function getHexColor(color: string) {
+function getFallbackHex(color: string) {
   const map: any = {
     "Negro": "#1a1a1a", "Blanco": "#ffffff", "Gris": "#94a3b8", "Gris claro": "#cbd5e1",
     "Gris Plata": "#e2e8f0", "Azul": "#2563eb", "Celeste": "#60a5fa", "Aqua": "#2dd4bf",
@@ -164,9 +176,13 @@ function getHexColor(color: string) {
   return map[color] || "#ccc";
 }
 
-function isDark(color: string) {
-  const darks = ["Negro", "Azul", "Rojo", "Verde Oscuro", "Marron", "Marron chocolate", "Violeta", "Fucsia"];
-  return darks.includes(color);
+function isDark(hex: string) {
+  const hexValue = hex.replace('#', '');
+  const r = parseInt(hexValue.substr(0, 2), 16);
+  const g = parseInt(hexValue.substr(2, 2), 16);
+  const b = parseInt(hexValue.substr(4, 2), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness < 128;
 }
 
 export default StockBoard;
