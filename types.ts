@@ -29,6 +29,7 @@ export interface Order {
   createdAt: string;
 }
 
+// Interface for chat history messages used by SinapsisBot
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;

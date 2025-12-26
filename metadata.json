@@ -1,7 +1,5 @@
 {
-  "name": "SinapsisBot - 3D Printing Assistant",
-  "description": "An intelligent assistant for Sinapsis 3D in Bariloche, helping Maru manage stock, calculate budgets, and organize the production queue with an Argentinian personality.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "name": "Sinapsis 3D - Gestión Operativa",
+  "description": "Sistema de gestión para Sinapsis 3D en Bariloche, enfocado en control de stock, presupuestos y cola de producción.",
+  "requestFramePermissions": []
 }

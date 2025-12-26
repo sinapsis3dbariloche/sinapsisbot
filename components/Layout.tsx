@@ -1,5 +1,5 @@
 
-import { Package, ClipboardList, Calculator, MessageSquare, Menu } from 'lucide-react';
+import { Package, ClipboardList, Calculator, Menu, RotateCcw } from 'lucide-react';
 import React from 'react';
 
 interface LayoutProps {
@@ -12,10 +12,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const navItems = [
-    { id: 'chat', label: 'SinapsisBot', icon: MessageSquare },
-    { id: 'stock', label: 'Stock', icon: Package },
-    { id: 'queue', label: 'Producción', icon: ClipboardList },
     { id: 'calc', label: 'Calculadora', icon: Calculator },
+    { id: 'stock', label: 'Stock', icon: Package },
+    { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
+    { id: 'queue', label: 'Producción', icon: ClipboardList },
   ];
 
   return (
@@ -40,6 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           <nav className="flex-1 px-6 space-y-2 mt-8">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isSub = item.isSubItem;
               return (
                 <button
                   key={item.id}
@@ -47,9 +48,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                     setActiveTab(item.id);
                     setIsSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] font-black uppercase tracking-widest text-[11px] transition-all duration-300 ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-600/40 translate-x-1' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
+                  className={`w-full flex items-center gap-4 py-4 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-300 ${isSub ? 'pl-10 text-[9px] opacity-70' : 'px-6 text-[11px]'} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
                 >
-                  <Icon size={18} />
+                  <Icon size={isSub ? 14 : 18} />
                   {item.label}
                 </button>
               );
