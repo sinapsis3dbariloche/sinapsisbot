@@ -3,10 +3,23 @@ import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import StockBoard from './components/StockBoard';
 import StockManager from './components/StockManager';
+import MaintenanceBoard from './components/MaintenanceBoard';
+import PrinterManager from './components/PrinterManager';
 import OrderQueue from './components/OrderQueue';
 import BudgetCalculator from './components/BudgetCalculator';
-import { StockItem, Order } from './types';
-import { subscribeToStock, subscribeToOrders, subscribeToSettings, updateStockItemInDb, updateSettings, resetAllStockInDb, deleteStockItemFromDb } from './services/firebaseService';
+import { StockItem, Order, Printer } from './types';
+import { 
+  subscribeToStock, 
+  subscribeToOrders, 
+  subscribeToSettings, 
+  subscribeToPrinters,
+  updateStockItemInDb, 
+  updateSettings, 
+  resetAllStockInDb, 
+  deleteStockItemFromDb,
+  updatePrinterInDb,
+  deletePrinterFromDb
+} from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 
@@ -14,6 +27,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('calc');
   const [stock, setStock] = useState<StockItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [printers, setPrinters] = useState<Printer[]>([]);
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
@@ -33,6 +47,10 @@ const App: React.FC = () => {
       setOrders(newOrders);
     });
 
+    const unsubPrinters = subscribeToPrinters((newPrinters) => {
+      setPrinters(newPrinters);
+    });
+
     const unsubSettings = subscribeToSettings((settings) => {
       if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
       if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
@@ -43,6 +61,7 @@ const App: React.FC = () => {
     return () => {
       unsubStock();
       unsubOrders();
+      unsubPrinters();
       unsubSettings();
     };
   }, []);
@@ -60,6 +79,18 @@ const App: React.FC = () => {
 
   const handleDeleteStockItem = async (id: string) => {
     await deleteStockItemFromDb(id);
+  };
+
+  const handleUpdatePrinter = async (printer: Printer) => {
+    await updatePrinterInDb(printer);
+  };
+
+  const handleAddPrinter = async (printer: Printer) => {
+    await updatePrinterInDb(printer);
+  };
+
+  const handleDeletePrinter = async (id: string) => {
+    await deletePrinterFromDb(id);
   };
 
   const handleResetAllStock = async () => {
@@ -132,6 +163,19 @@ const App: React.FC = () => {
               </p>
             </div>
           </div>
+        )}
+
+        {(activeTab === 'maint' || activeTab === 'maint-logs') && (
+          <MaintenanceBoard printers={printers} onUpdatePrinter={handleUpdatePrinter} />
+        )}
+
+        {activeTab === 'maint-edit' && (
+          <PrinterManager 
+            printers={printers} 
+            onAdd={handleAddPrinter}
+            onUpdate={handleUpdatePrinter}
+            onDelete={handleDeletePrinter}
+          />
         )}
 
         {activeTab === 'queue' && <OrderQueue orders={orders} />}

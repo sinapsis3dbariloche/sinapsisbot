@@ -1,5 +1,5 @@
 
-import { OrderStatus, FilamentType, StockItem, Order } from './types';
+import { OrderStatus, FilamentType, StockItem, Order, Printer } from './types';
 
 const plaColorsMap: Record<string, string> = {
   "Negro": "#1a1a1a", "Blanco": "#ffffff", "Gris": "#94a3b8", "Gris claro": "#cbd5e1",
@@ -37,6 +37,12 @@ export const INITIAL_STOCK: StockItem[] = [
 export const INITIAL_ORDERS: Order[] = [
   { id: 'o1', customer: 'Juan', details: '2 Mates rojos', status: OrderStatus.PENDIENTE, priority: 'Media', createdAt: '2024-05-15' },
   { id: 'o2', customer: 'Empresa X', details: '50 Llaveros logo', status: OrderStatus.IMPRIMIENDO, priority: 'Alta', createdAt: '2024-05-16' },
+];
+
+export const INITIAL_PRINTERS: Printer[] = [
+  { id: 'p1', name: 'Bambu A1 Mini', model: 'A1 Mini', hasAMS: false, history: [] },
+  { id: 'p2', name: 'Bambu Normal #1', model: 'P1S / X1C', hasAMS: true, history: [] },
+  { id: 'p3', name: 'Bambu Normal #2', model: 'P1S / X1C', hasAMS: true, history: [] }
 ];
 
 export const DEFAULT_PLA_PRICE = 25000;

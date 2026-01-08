@@ -1,8 +1,8 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
-import { StockItem, Order } from '../types';
-import { INITIAL_STOCK, INITIAL_ORDERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
+import { StockItem, Order, Printer } from '../types';
+import { INITIAL_STOCK, INITIAL_ORDERS, INITIAL_PRINTERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
 // CONFIGURACIÓN DE FIREBASE - SINAPSIS 3D
 const firebaseConfig = {
@@ -32,6 +32,19 @@ export const subscribeToOrders = (callback: (orders: Order[]) => void) => {
   return onSnapshot(collection(db, 'orders'), (snapshot) => {
     const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
     callback(orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  });
+};
+
+export const subscribeToPrinters = (callback: (printers: Printer[]) => void) => {
+  return onSnapshot(collection(db, 'printers'), (snapshot) => {
+    if (snapshot.empty) {
+      const batch = writeBatch(db);
+      INITIAL_PRINTERS.forEach(p => batch.set(doc(db, 'printers', p.id), p));
+      batch.commit();
+      return;
+    }
+    const printers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Printer));
+    callback(printers);
   });
 };
 
@@ -66,6 +79,16 @@ export const deleteStockItemFromDb = async (id: string) => {
   await deleteDoc(docRef);
 };
 
+export const updatePrinterInDb = async (printer: Printer) => {
+  const docRef = doc(db, 'printers', printer.id);
+  await setDoc(docRef, printer, { merge: true });
+};
+
+export const deletePrinterFromDb = async (id: string) => {
+  const docRef = doc(db, 'printers', id);
+  await deleteDoc(docRef);
+};
+
 export const resetAllStockInDb = async () => {
   const batch = writeBatch(db);
   const snapshot = await getDocs(collection(db, 'stock'));
@@ -90,6 +113,10 @@ const initializeDatabase = async () => {
   INITIAL_ORDERS.forEach(order => {
     const ref = doc(db, 'orders', order.id);
     batch.set(ref, order);
+  });
+  INITIAL_PRINTERS.forEach(p => {
+    const ref = doc(db, 'printers', p.id);
+    batch.set(ref, p);
   });
   const configRef = doc(db, 'config', 'settings');
   batch.set(configRef, { 

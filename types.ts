@@ -22,6 +22,21 @@ export interface StockItem {
   hexColor?: string;
 }
 
+export interface MaintenanceRecord {
+  id: string;
+  date: string;
+  type: 'Cambio de Hotend' | 'Limpieza' | 'Engrase' | 'General';
+  notes: string;
+}
+
+export interface Printer {
+  id: string;
+  name: string;
+  model: string;
+  hasAMS: boolean;
+  history: MaintenanceRecord[];
+}
+
 export interface Order {
   id: string;
   customer: string;
