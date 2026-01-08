@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
   const [postProcessPrice, setPostProcessPrice] = useState<number>(DEFAULT_POST_PROCESS_PRICE);
+  const [hotendStock, setHotendStock] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSynced, setIsSynced] = useState(false);
 
@@ -56,6 +57,7 @@ const App: React.FC = () => {
       if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
       if (settings?.designPrice) setDesignPrice(settings.designPrice);
       if (settings?.postProcessPrice) setPostProcessPrice(settings.postProcessPrice);
+      if (settings?.hotendStock !== undefined) setHotendStock(settings.hotendStock);
     });
 
     return () => {
@@ -91,6 +93,10 @@ const App: React.FC = () => {
 
   const handleDeletePrinter = async (id: string) => {
     await deletePrinterFromDb(id);
+  };
+
+  const handleUpdateHotendStock = async (newStock: number) => {
+    await updateSettings({ hotendStock: Math.max(0, newStock) });
   };
 
   const handleResetAllStock = async () => {
@@ -166,7 +172,12 @@ const App: React.FC = () => {
         )}
 
         {(activeTab === 'maint' || activeTab === 'maint-logs') && (
-          <MaintenanceBoard printers={printers} onUpdatePrinter={handleUpdatePrinter} />
+          <MaintenanceBoard 
+            printers={printers} 
+            onUpdatePrinter={handleUpdatePrinter}
+            hotendStock={hotendStock}
+            onUpdateHotendStock={handleUpdateHotendStock}
+          />
         )}
 
         {activeTab === 'maint-edit' && (

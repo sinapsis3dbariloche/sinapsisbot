@@ -58,7 +58,8 @@ export const subscribeToSettings = (callback: (settings: any) => void) => {
         plaPrice: DEFAULT_PLA_PRICE,
         petgPrice: DEFAULT_PETG_PRICE,
         designPrice: DEFAULT_DESIGN_PRICE,
-        postProcessPrice: DEFAULT_POST_PROCESS_PRICE
+        postProcessPrice: DEFAULT_POST_PROCESS_PRICE,
+        hotendStock: 5 // Valor inicial por defecto
       });
     }
   });
@@ -123,7 +124,8 @@ const initializeDatabase = async () => {
     plaPrice: DEFAULT_PLA_PRICE,
     petgPrice: DEFAULT_PETG_PRICE,
     designPrice: DEFAULT_DESIGN_PRICE,
-    postProcessPrice: DEFAULT_POST_PROCESS_PRICE
+    postProcessPrice: DEFAULT_POST_PROCESS_PRICE,
+    hotendStock: 5
   });
   await batch.commit();
 };
