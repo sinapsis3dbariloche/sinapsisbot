@@ -1,5 +1,6 @@
 {
   "name": "Sinapsis 3D - Gestión Operativa",
   "description": "Sistema de gestión para Sinapsis 3D en Bariloche, enfocado en control de stock, presupuestos y cola de producción.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

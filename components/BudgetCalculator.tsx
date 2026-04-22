@@ -281,7 +281,7 @@ const BudgetCalculator: React.FC<BudgetCalculatorProps> = ({
                   
                   <div>
                     <div className="text-white text-[11px] font-black uppercase tracking-[0.3em] mb-2 opacity-90">Total Sugerido</div>
-                    <div className="text-7xl font-black tracking-tighter drop-shadow-lg leading-none">
+                    <div className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter drop-shadow-lg leading-none">
                       ${Math.round(results.finalPrice).toLocaleString('es-AR')}
                     </div>
                   </div>

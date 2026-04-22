@@ -82,7 +82,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-slate-950 bg-slate-100 rounded-2xl active:scale-95 transition-transform"><Menu size={24} /></button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 lg:p-12">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-12">
           <div className="max-w-6xl mx-auto h-full">{children}</div>
         </div>
       </main>

@@ -107,8 +107,9 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
       </div>
 
       <div className="flex-1 bg-white rounded-[1.5rem] border border-slate-100 shadow-xl overflow-hidden flex flex-col">
-        <div className="overflow-y-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[600px]">
             <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 shadow-sm">
               <tr>
                 <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Filamento</th>
@@ -171,6 +172,63 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          {filteredStock.map((item) => {
+            const low = checkAlert(item);
+            const min = getMin(item);
+            const hexColor = item.hexColor || getFallbackHex(item.color);
+            return (
+              <div key={item.id} className={`p-4 rounded-2xl border transition-all ${low ? 'bg-orange-50/50 border-orange-100 shadow-md' : 'bg-white border-slate-100 shadow-sm'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl shadow-inner border border-black/5 flex items-center justify-center"
+                      style={{ backgroundColor: hexColor }}
+                    >
+                      <Droplet size={16} className={isDark(hexColor) ? 'text-white/30' : 'text-black/10'} />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 uppercase text-sm tracking-tight leading-none mb-1">{item.color}</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.type}</p>
+                    </div>
+                  </div>
+                  {low && (
+                    <div className="bg-orange-600 text-white px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-lg shadow-orange-600/20 animate-pulse-soft">
+                      Reponer
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-3 rounded-xl flex flex-col items-center">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Cerrados (Min: {min})</span>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => updateCount(item.id, 'closedCount', -1)} className="p-2 text-slate-300 hover:text-red-500"><Minus size={16} /></button>
+                      <span className={`text-xl font-black ${low ? 'text-orange-600' : 'text-slate-900'}`}>{item.closedCount}</span>
+                      <button onClick={() => updateCount(item.id, 'closedCount', 1)} className="p-2 text-orange-600"><Plus size={16} /></button>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl flex flex-col items-center">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Abiertos</span>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => updateCount(item.id, 'openCount', -1)} className="p-2 text-slate-300 hover:text-red-500"><Minus size={16} /></button>
+                      <span className="text-xl font-black text-slate-900">{item.openCount}</span>
+                      <button onClick={() => updateCount(item.id, 'openCount', 1)} className="p-2 text-orange-600"><Plus size={16} /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {filteredStock.length === 0 && (
+            <div className="text-center py-12">
+              <Search size={32} className="mx-auto text-slate-200 mb-2" />
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sin resultados</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

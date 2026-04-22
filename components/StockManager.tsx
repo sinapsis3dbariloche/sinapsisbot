@@ -122,89 +122,160 @@ const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onD
       )}
 
       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-100">
-            <tr>
-              <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Identificación</th>
-              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Mínimo</th>
-              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {stock.sort((a,b) => a.color.localeCompare(b.color)).map(item => (
-              <tr key={item.id} className="group hover:bg-slate-50/50 transition-all">
-                <td className="px-8 py-4">
-                  {editingId === item.id ? (
-                    <div className="flex items-center gap-4">
-                      <input 
-                        type="color" 
-                        value={formData.hexColor} 
-                        onChange={e => setFormData({...formData, hexColor: e.target.value})}
-                        className="w-10 h-10 rounded-xl cursor-pointer"
-                      />
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left min-w-[700px]">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-8 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Identificación</th>
+                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Mínimo</th>
+                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {stock.sort((a,b) => a.color.localeCompare(b.color)).map(item => (
+                <tr key={item.id} className="group hover:bg-slate-50/50 transition-all">
+                  <td className="px-8 py-4">
+                    {editingId === item.id ? (
+                      <div className="flex items-center gap-4">
+                        <input 
+                          type="color" 
+                          value={formData.hexColor} 
+                          onChange={e => setFormData({...formData, hexColor: e.target.value})}
+                          className="w-10 h-10 rounded-xl cursor-pointer"
+                        />
+                        <input 
+                          type="text" 
+                          value={formData.color} 
+                          onChange={e => setFormData({...formData, color: e.target.value})}
+                          className="bg-slate-100 border-none rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-orange-600"
+                        />
+                        <span className="text-[10px] font-black text-slate-300">{item.type}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl shadow-inner border border-slate-200 flex items-center justify-center" style={{ backgroundColor: item.hexColor }}>
+                          <Droplet size={14} className="opacity-20" />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 uppercase text-xs tracking-tight">{item.color}</p>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{item.type}</p>
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    {editingId === item.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 font-black">Min:</span>
+                        <input 
+                          type="number" 
+                          value={formData.minClosed} 
+                          onChange={e => setFormData({...formData, minClosed: Number(e.target.value)})}
+                          className="w-16 bg-slate-100 border-none rounded-lg px-2 py-2 text-xs font-bold"
+                        />
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mínimo:</span>
+                        <span className="font-black text-slate-900 text-xs">{item.minClosed || 1}</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {editingId === item.id ? (
+                      <div className="flex justify-end gap-2">
+                        <button onClick={handleSave} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Save size={18} /></button>
+                        <button onClick={() => setEditingId(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                        <button 
+                          onClick={() => { if(confirm('¿Eliminar filamento del catálogo?')) onDelete(item.id); }} 
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-slate-50">
+          {stock.sort((a,b) => a.color.localeCompare(b.color)).map(item => (
+            <div key={item.id} className="p-4 space-y-4">
+              {editingId === item.id ? (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black text-slate-400 uppercase">Color</label>
                       <input 
                         type="text" 
                         value={formData.color} 
                         onChange={e => setFormData({...formData, color: e.target.value})}
-                        className="bg-slate-100 border-none rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-orange-600"
+                        className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-xs font-bold"
                       />
-                      <span className="text-[10px] font-black text-slate-300">{item.type}</span>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl shadow-inner border border-slate-200 flex items-center justify-center" style={{ backgroundColor: item.hexColor }}>
-                        <Droplet size={14} className="opacity-20" />
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-900 uppercase text-xs tracking-tight">{item.color}</p>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{item.type}</p>
-                      </div>
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  {editingId === item.id ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400 font-black">Min:</span>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black text-slate-400 uppercase">Mínimo</label>
                       <input 
                         type="number" 
                         value={formData.minClosed} 
                         onChange={e => setFormData({...formData, minClosed: Number(e.target.value)})}
-                        className="w-16 bg-slate-100 border-none rounded-lg px-2 py-2 text-xs font-bold"
+                        className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-xs font-bold"
                       />
                     </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mínimo:</span>
-                      <span className="font-black text-slate-900 text-xs">{item.minClosed || 1}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="color" 
+                      value={formData.hexColor} 
+                      onChange={e => setFormData({...formData, hexColor: e.target.value})}
+                      className="w-full h-10 rounded-xl cursor-pointer"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={handleSave} className="bg-green-600 text-white p-2.5 rounded-xl"><Save size={18} /></button>
+                      <button onClick={() => setEditingId(null)} className="bg-slate-200 text-slate-600 p-2.5 rounded-xl"><X size={18} /></button>
                     </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  {editingId === item.id ? (
-                    <div className="flex justify-end gap-2">
-                      <button onClick={handleSave} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Save size={18} /></button>
-                      <button onClick={() => setEditingId(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl shadow-inner border border-slate-100 flex items-center justify-center" style={{ backgroundColor: item.hexColor }}>
+                      <Droplet size={18} className="opacity-20" />
                     </div>
-                  ) : (
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
-                      <button 
-                        onClick={() => { if(confirm('¿Eliminar filamento del catálogo?')) onDelete(item.id); }} 
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    <div>
+                      <p className="font-black text-slate-900 uppercase text-xs tracking-tight">{item.color}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">{item.type}</span>
+                        <span className="text-[8px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-black uppercase">Min: {item.minClosed || 1}</span>
+                      </div>
                     </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEdit(item)} className="p-2.5 text-slate-400 hover:text-blue-600 active:bg-blue-50 rounded-xl transition-colors"><Edit2 size={18} /></button>
+                    <button 
+                      onClick={() => { if(confirm('¿Eliminar filamento del catálogo?')) onDelete(item.id); }} 
+                      className="p-2.5 text-slate-400 hover:text-red-600 active:bg-red-50 rounded-xl transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+  </div>
+);
 };
 
 export default StockManager;
