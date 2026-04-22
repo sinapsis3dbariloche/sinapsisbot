@@ -7,18 +7,22 @@ import MaintenanceBoard from './components/MaintenanceBoard';
 import PrinterManager from './components/PrinterManager';
 import OrderQueue from './components/OrderQueue';
 import BudgetCalculator from './components/BudgetCalculator';
-import { StockItem, Order, Printer } from './types';
+import CustomerManager from './components/CustomerManager';
+import { StockItem, Order, Printer, Customer } from './types';
 import { 
   subscribeToStock, 
   subscribeToOrders, 
   subscribeToSettings, 
   subscribeToPrinters,
+  subscribeToCustomers,
   updateStockItemInDb, 
   updateSettings, 
   resetAllStockInDb, 
   deleteStockItemFromDb,
   updatePrinterInDb,
-  deletePrinterFromDb
+  deletePrinterFromDb,
+  updateCustomerInDb,
+  deleteCustomerFromDb
 } from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
@@ -28,6 +32,7 @@ const App: React.FC = () => {
   const [stock, setStock] = useState<StockItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
@@ -52,6 +57,10 @@ const App: React.FC = () => {
       setPrinters(newPrinters);
     });
 
+    const unsubCustomers = subscribeToCustomers((newCustomers) => {
+      setCustomers(newCustomers);
+    });
+
     const unsubSettings = subscribeToSettings((settings) => {
       if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
       if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
@@ -64,6 +73,7 @@ const App: React.FC = () => {
       unsubStock();
       unsubOrders();
       unsubPrinters();
+      unsubCustomers();
       unsubSettings();
     };
   }, []);
@@ -93,6 +103,14 @@ const App: React.FC = () => {
 
   const handleDeletePrinter = async (id: string) => {
     await deletePrinterFromDb(id);
+  };
+
+  const handleUpdateCustomer = async (customer: Customer) => {
+    await updateCustomerInDb(customer);
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    await deleteCustomerFromDb(id);
   };
 
   const handleUpdateHotendStock = async (newStock: number) => {
@@ -197,6 +215,14 @@ const App: React.FC = () => {
             designPrice={designPrice}
             postProcessPrice={postProcessPrice}
             onUpdatePrices={handleUpdatePrices} 
+          />
+        )}
+
+        {activeTab === 'customers' && (
+          <CustomerManager 
+            customers={customers}
+            onUpdate={handleUpdateCustomer}
+            onDelete={handleDeleteCustomer}
           />
         )}
       </div>

@@ -46,6 +46,22 @@ export interface Order {
   createdAt: string;
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  street: string;
+  number: string;
+  city: string;
+  cuit: string;
+  taxCondition: 'Consumidor Final' | 'Responsable Inscripto' | 'Monotributista' | 'Exento';
+  instagram?: string;
+  notes?: string;
+  createdAt: string;
+}
+
 // Interface for chat history messages used by SinapsisBot
 export interface ChatMessage {
   role: 'user' | 'model';

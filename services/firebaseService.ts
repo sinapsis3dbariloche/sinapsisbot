@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
-import { StockItem, Order, Printer } from '../types';
+import { StockItem, Order, Printer, Customer } from '../types';
 import { INITIAL_STOCK, INITIAL_ORDERS, INITIAL_PRINTERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
 // CONFIGURACIÓN DE FIREBASE - SINAPSIS 3D
@@ -48,6 +48,13 @@ export const subscribeToPrinters = (callback: (printers: Printer[]) => void) => 
   });
 };
 
+export const subscribeToCustomers = (callback: (customers: Customer[]) => void) => {
+  return onSnapshot(collection(db, 'customers'), (snapshot) => {
+    const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+    callback(customers.sort((a, b) => a.name.localeCompare(b.name)));
+  });
+};
+
 export const subscribeToSettings = (callback: (settings: any) => void) => {
   const settingsRef = doc(db, 'config', 'settings');
   return onSnapshot(settingsRef, (snapshot) => {
@@ -87,6 +94,16 @@ export const updatePrinterInDb = async (printer: Printer) => {
 
 export const deletePrinterFromDb = async (id: string) => {
   const docRef = doc(db, 'printers', id);
+  await deleteDoc(docRef);
+};
+
+export const updateCustomerInDb = async (customer: Customer) => {
+  const docRef = doc(db, 'customers', customer.id);
+  await setDoc(docRef, customer, { merge: true });
+};
+
+export const deleteCustomerFromDb = async (id: string) => {
+  const docRef = doc(db, 'customers', id);
   await deleteDoc(docRef);
 };
 
