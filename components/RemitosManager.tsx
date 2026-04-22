@@ -196,7 +196,15 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
       head: [['Descripción', 'Cantidad', 'Precio Unit.', 'Total']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
+      headStyles: { 
+        fillColor: [255, 255, 255], 
+        textColor: 0, 
+        fontStyle: 'bold',
+        lineWidth: 0.1
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
       styles: { fontSize: 9, cellPadding: 3 },
       columnStyles: {
         0: { cellWidth: 'auto' },
