@@ -254,12 +254,12 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between group/item">
-                <div className="flex items-center gap-3 text-slate-600">
-                  <Phone size={14} className="text-slate-300" />
-                  <span className="text-xs font-medium">{customer.phone || 'No registrado'}</span>
-                </div>
-                {customer.phone && (
+              {customer.phone && (
+                <div className="flex items-center justify-between group/item">
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <Phone size={14} className="text-slate-300" />
+                    <span className="text-xs font-medium">{customer.phone}</span>
+                  </div>
                   <a 
                     href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`} 
                     target="_blank" 
@@ -269,20 +269,24 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
                   >
                     <MessageCircle size={12} />
                   </a>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-slate-600">
-                <Mail size={14} className="text-slate-300" />
-                <span className="text-xs font-medium truncate">{customer.email || 'No registrado'}</span>
-              </div>
-              <div className="flex items-center justify-between group/item">
-                <div className="flex items-center gap-3 text-slate-600">
-                  <MapPin size={14} className="text-slate-300" />
-                  <span className="text-xs font-medium truncate">
-                    {customer.street ? `${customer.street} ${customer.number}${customer.city ? `, ${customer.city}` : ''}` : 'No registrada'}
-                  </span>
                 </div>
-                {customer.street && (
+              )}
+              
+              {customer.email && (
+                <div className="flex items-center gap-3 text-slate-600">
+                  <Mail size={14} className="text-slate-300" />
+                  <span className="text-xs font-medium truncate">{customer.email}</span>
+                </div>
+              )}
+
+              {customer.street && (
+                <div className="flex items-center justify-between group/item">
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <MapPin size={14} className="text-slate-300" />
+                    <span className="text-xs font-medium truncate">
+                      {customer.street} {customer.number}{customer.city ? `, ${customer.city}` : ''}
+                    </span>
+                  </div>
                   <a 
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${customer.street} ${customer.number}, ${customer.city || ''}`)}`} 
                     target="_blank" 
@@ -292,8 +296,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
                   >
                     <MapPin size={12} />
                   </a>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-50 flex flex-wrap gap-2 items-center">
