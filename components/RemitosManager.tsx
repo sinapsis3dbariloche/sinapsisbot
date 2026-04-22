@@ -383,72 +383,96 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-3">
+        {/* List Header - Desktop Only */}
+        <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <div className="col-span-2">Número / Fecha</div>
+          <div className="col-span-3">Cliente</div>
+          <div className="col-span-2 text-center">Estado</div>
+          <div className="col-span-2 text-right">Total</div>
+          <div className="col-span-3 text-right">Acciones</div>
+        </div>
+
         {filteredRemitos.map(remito => (
-          <div key={remito.id} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-6 hover:shadow-md transition-all group flex flex-col h-full">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest mb-1 inline-block">
+          <div key={remito.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-4 md:px-8 md:py-4 hover:shadow-md transition-all group flex flex-col md:block">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              {/* Number & Date */}
+              <div className="col-span-2">
+                <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest block w-fit mb-1">
                   {remito.number}
                 </span>
-                <h3 className="font-black text-slate-900 uppercase text-sm leading-tight">{remito.customerName}</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5 mt-1">
+                <p className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5 whitespace-nowrap">
                   <Calendar size={10} /> {new Date(remito.date).toLocaleDateString('es-AR')}
                 </p>
               </div>
-              <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
-                remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
-                'bg-orange-100 text-orange-700'
-              }`}>
-                {remito.status}
-              </div>
-            </div>
 
-            <div className="flex-1 space-y-4">
-              <div className="bg-slate-50 p-3 rounded-xl space-y-2">
-                {remito.items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between text-[11px] font-medium text-slate-600">
-                    <span className="truncate max-w-[150px]">{it.quantity}x {it.description}</span>
-                    <span className="font-bold text-slate-800">$ {it.total.toLocaleString('es-AR')}</span>
-                  </div>
-                ))}
+              {/* Customer */}
+              <div className="col-span-3">
+                <h3 className="font-black text-slate-900 uppercase text-sm leading-tight truncate" title={remito.customerName}>
+                  {remito.customerName}
+                </h3>
+                {remito.notes && (
+                  <p className="text-[9px] text-slate-400 truncate italic mt-0.5">{remito.notes}</p>
+                )}
               </div>
 
-              <div className="flex justify-between items-center py-2 border-t border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase">Total</span>
-                <span className="text-lg font-black text-slate-900">$ {remito.total.toLocaleString('es-AR')}</span>
+              {/* Status */}
+              <div className="col-span-2 md:text-center">
+                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+                  remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
+                  remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
+                  'bg-orange-100 text-orange-700'
+                }`}>
+                  {remito.status}
+                </span>
               </div>
-            </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              <button 
-                onClick={() => generatePDF(remito)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex-1"
-              >
-                <Download size={12} /> PDF
-              </button>
-              <button 
-                onClick={() => setSelectedRemito(remito)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-orange-100 text-orange-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-200 transition-all"
-              >
-                <DollarSign size={12} /> Pago
-              </button>
-              <button 
-                onClick={() => handleEditRemito(remito)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
-              >
-                Editar
-              </button>
-              <button 
-                onClick={() => {if(confirm('¿Eliminar remito?')) onDelete(remito.id)}}
-                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-              >
-                <Trash2 size={14} />
-              </button>
+              {/* Total */}
+              <div className="col-span-2 text-left md:text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase md:hidden mb-1">Total</p>
+                <span className="text-lg font-black text-slate-900 tracking-tighter">
+                  $ {remito.total.toLocaleString('es-AR')}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="col-span-3 flex justify-end items-center gap-2">
+                <button 
+                  onClick={() => generatePDF(remito)}
+                  className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+                  title="Descargar PDF"
+                >
+                  <Download size={14} />
+                </button>
+                <button 
+                  onClick={() => setSelectedRemito(remito)}
+                  className="p-2.5 bg-orange-100 text-orange-700 rounded-xl hover:bg-orange-200 transition-all"
+                  title="Registrar Pago"
+                >
+                  <DollarSign size={14} />
+                </button>
+                <button 
+                  onClick={() => handleEditRemito(remito)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Editar
+                </button>
+                <button 
+                  onClick={() => {if(confirm('¿Eliminar remito?')) onDelete(remito.id)}}
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           </div>
         ))}
+
+        {filteredRemitos.length === 0 && (
+          <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No se encontraron remitos</p>
+          </div>
+        )}
       </div>
 
       {/* Payment Modal */}
