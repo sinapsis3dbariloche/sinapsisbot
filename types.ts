@@ -46,6 +46,33 @@ export interface Order {
   createdAt: string;
 }
 
+export interface RemitoItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface PaymentRecord {
+  amount: number;
+  date: string;
+}
+
+export interface Remito {
+  id: string;
+  number: string; // e.g., "0001 - 00046"
+  customerId: string;
+  customerName: string;
+  date: string;
+  items: RemitoItem[];
+  total: number;
+  status: 'Pendiente' | 'Parcial' | 'Pagado';
+  amountPaid: number;
+  paymentHistory?: PaymentRecord[];
+  notes?: string;
+  createdAt: string;
+}
+
 export interface Customer {
   id: string;
   name: string;

@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
-import { StockItem, Order, Printer, Customer } from '../types';
+import { StockItem, Order, Printer, Customer, Remito } from '../types';
 import { INITIAL_STOCK, INITIAL_ORDERS, INITIAL_PRINTERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
 // CONFIGURACIÓN DE FIREBASE - SINAPSIS 3D
@@ -55,6 +55,13 @@ export const subscribeToCustomers = (callback: (customers: Customer[]) => void) 
   });
 };
 
+export const subscribeToRemitos = (callback: (remitos: Remito[]) => void) => {
+  return onSnapshot(collection(db, 'remitos'), (snapshot) => {
+    const remitos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Remito));
+    callback(remitos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  });
+};
+
 export const subscribeToSettings = (callback: (settings: any) => void) => {
   const settingsRef = doc(db, 'config', 'settings');
   return onSnapshot(settingsRef, (snapshot) => {
@@ -105,6 +112,26 @@ export const updateCustomerInDb = async (customer: Customer) => {
 export const deleteCustomerFromDb = async (id: string) => {
   const docRef = doc(db, 'customers', id);
   await deleteDoc(docRef);
+};
+
+export const updateRemitoInDb = async (remito: Remito) => {
+  const docRef = doc(db, 'remitos', remito.id);
+  await setDoc(docRef, remito, { merge: true });
+};
+
+export const deleteRemitoFromDb = async (id: string) => {
+  const docRef = doc(db, 'remitos', id);
+  await deleteDoc(docRef);
+};
+
+export const getNextRemitoNumber = async () => {
+  const snapshot = await getDocs(collection(db, 'remitos'));
+  if (snapshot.empty) return 46; // Starting from the one in your template if it's the first
+  const numbers = snapshot.docs.map(d => {
+    const numPart = d.data().number.split('-')[1]?.trim();
+    return parseInt(numPart) || 0;
+  });
+  return Math.max(...numbers) + 1;
 };
 
 export const resetAllStockInDb = async () => {

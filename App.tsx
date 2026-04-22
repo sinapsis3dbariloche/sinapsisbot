@@ -8,13 +8,15 @@ import PrinterManager from './components/PrinterManager';
 import OrderQueue from './components/OrderQueue';
 import BudgetCalculator from './components/BudgetCalculator';
 import CustomerManager from './components/CustomerManager';
-import { StockItem, Order, Printer, Customer } from './types';
+import RemitosManager from './components/RemitosManager';
+import { StockItem, Order, Printer, Customer, Remito } from './types';
 import { 
   subscribeToStock, 
   subscribeToOrders, 
   subscribeToSettings, 
   subscribeToPrinters,
   subscribeToCustomers,
+  subscribeToRemitos,
   updateStockItemInDb, 
   updateSettings, 
   resetAllStockInDb, 
@@ -22,7 +24,10 @@ import {
   updatePrinterInDb,
   deletePrinterFromDb,
   updateCustomerInDb,
-  deleteCustomerFromDb
+  deleteCustomerFromDb,
+  updateRemitoInDb,
+  deleteRemitoFromDb,
+  getNextRemitoNumber
 } from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
@@ -33,6 +38,7 @@ const App: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [remitos, setRemitos] = useState<Remito[]>([]);
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
@@ -61,6 +67,10 @@ const App: React.FC = () => {
       setCustomers(newCustomers);
     });
 
+    const unsubRemitos = subscribeToRemitos((newRemitos) => {
+      setRemitos(newRemitos);
+    });
+
     const unsubSettings = subscribeToSettings((settings) => {
       if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
       if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
@@ -74,6 +84,7 @@ const App: React.FC = () => {
       unsubOrders();
       unsubPrinters();
       unsubCustomers();
+      unsubRemitos();
       unsubSettings();
     };
   }, []);
@@ -111,6 +122,14 @@ const App: React.FC = () => {
 
   const handleDeleteCustomer = async (id: string) => {
     await deleteCustomerFromDb(id);
+  };
+
+  const handleUpdateRemito = async (remito: Remito) => {
+    await updateRemitoInDb(remito);
+  };
+
+  const handleDeleteRemito = async (id: string) => {
+    await deleteRemitoFromDb(id);
   };
 
   const handleUpdateHotendStock = async (newStock: number) => {
@@ -223,6 +242,16 @@ const App: React.FC = () => {
             customers={customers}
             onUpdate={handleUpdateCustomer}
             onDelete={handleDeleteCustomer}
+          />
+        )}
+
+        {activeTab === 'remitos' && (
+          <RemitosManager 
+            remitos={remitos}
+            customers={customers}
+            onUpdate={handleUpdateRemito}
+            onDelete={handleDeleteRemito}
+            getNextNumber={getNextRemitoNumber}
           />
         )}
       </div>

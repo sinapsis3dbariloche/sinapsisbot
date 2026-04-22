@@ -1,5 +1,5 @@
 
-import { Package, ClipboardList, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users } from 'lucide-react';
+import { Package, ClipboardList, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText } from 'lucide-react';
 import React from 'react';
 
 interface LayoutProps {
@@ -17,6 +17,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
     { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
     { id: 'customers', label: 'Clientes', icon: Users },
+    { id: 'remitos', label: 'Remitos', icon: FileText },
     { id: 'maint', label: 'Mantenimiento', icon: Wrench },
     { id: 'maint-logs', label: 'Registros Hotend', icon: ListTodo, isSubItem: true },
     { id: 'maint-edit', label: 'Gestionar Máquinas', icon: MonitorSmartphone, isSubItem: true },
@@ -42,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
             </div>
           </div>
 
-          <nav className="flex-1 px-6 space-y-2 mt-8">
+          <nav className="flex-1 px-6 space-y-2 mt-8 overflow-y-auto scrollbar-hide py-4">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isSub = item.isSubItem;
@@ -53,7 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                     setActiveTab(item.id);
                     setIsSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-4 py-4 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-300 ${isSub ? 'pl-10 text-[9px] opacity-70' : 'px-6 text-[11px]'} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
+                  className={`w-full flex items-center gap-4 py-4 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-300 shrink-0 ${isSub ? 'pl-10 text-[9px] opacity-70' : 'px-6 text-[11px]'} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
                 >
                   <Icon size={isSub ? 14 : 18} />
                   {item.label}
