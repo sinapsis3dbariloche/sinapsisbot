@@ -300,9 +300,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
               <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-50 text-slate-400 rounded-md">
                 {customer.taxCondition}
               </span>
-              <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-50 text-slate-400 rounded-md flex items-center gap-1">
-                <Hash size={8} /> {customer.cuit || 'S/C'}
-              </span>
+              {customer.cuit && (
+                <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-50 text-slate-400 rounded-md flex items-center gap-1">
+                  <Hash size={8} /> {customer.cuit}
+                </span>
+              )}
               {customer.instagram && (
                 <a 
                   href={`https://instagram.com/${customer.instagram.replace('@', '')}`}
