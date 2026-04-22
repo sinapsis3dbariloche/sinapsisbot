@@ -33,7 +33,8 @@ import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_PO
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('calc');
+  const [activeTab, setActiveTab] = useState('customers');
+  const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
   const [stock, setStock] = useState<StockItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
@@ -153,6 +154,11 @@ const App: React.FC = () => {
     });
   };
 
+  const handleViewRemitosByCustomer = (id: string) => {
+    setRemitoFilterCustomerId(id);
+    setActiveTab('remitos');
+  };
+
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
@@ -242,6 +248,7 @@ const App: React.FC = () => {
             customers={customers}
             onUpdate={handleUpdateCustomer}
             onDelete={handleDeleteCustomer}
+            onViewRemitos={handleViewRemitosByCustomer}
           />
         )}
 
@@ -252,6 +259,7 @@ const App: React.FC = () => {
             onUpdate={handleUpdateRemito}
             onDelete={handleDeleteRemito}
             getNextNumber={getNextRemitoNumber}
+            initialCustomerId={remitoFilterCustomerId}
           />
         )}
       </div>

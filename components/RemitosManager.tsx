@@ -4,7 +4,7 @@ import { Remito, Customer, RemitoItem } from '../types';
 import { 
   FileText, Plus, Search, Trash2, Download, Send, CheckCircle, 
   Clock, X, Save, User, Calendar, Trash, MessageCircle, Mail,
-  DollarSign, ChevronRight
+  DollarSign, ChevronRight, Pencil
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -15,14 +15,21 @@ interface RemitosManagerProps {
   onUpdate: (remito: Remito) => void;
   onDelete: (id: string) => void;
   getNextNumber: () => Promise<number>;
+  initialCustomerId?: string | null;
 }
 
 const RemitosManager: React.FC<RemitosManagerProps> = ({ 
-  remitos, customers, onUpdate, onDelete, getNextNumber 
+  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState(initialCustomerId || '');
   const [filterOnlyUnpaid, setFilterOnlyUnpaid] = useState(false);
+
+  useEffect(() => {
+    if (initialCustomerId !== undefined) {
+      setFilterCustomer(initialCustomerId || '');
+    }
+  }, [initialCustomerId]);
   const [isAdding, setIsAdding] = useState(false);
   const [selectedRemito, setSelectedRemito] = useState<Remito | null>(null);
   
@@ -453,9 +460,10 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 </button>
                 <button 
                   onClick={() => handleEditRemito(remito)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="p-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all"
+                  title="Editar Remito"
                 >
-                  Editar
+                  <Pencil size={14} />
                 </button>
                 <button 
                   onClick={() => {if(confirm('¿Eliminar remito?')) onDelete(remito.id)}}

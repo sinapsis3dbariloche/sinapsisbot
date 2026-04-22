@@ -1,15 +1,17 @@
 
 import React, { useState } from 'react';
 import { Customer } from '../types';
-import { UserPlus, Search, Edit2, Trash2, Save, X, Phone, Mail, MapPin, Hash, Instagram, FileText, User, MessageCircle, ExternalLink } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, Save, X, Phone, Mail, MapPin, Hash, Instagram, FileText, User, MessageCircle, ExternalLink, Package } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 
 interface CustomerManagerProps {
   customers: Customer[];
   onUpdate: (customer: Customer) => void;
   onDelete: (id: string) => void;
+  onViewRemitos: (id: string) => void;
 }
 
-const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, onDelete }) => {
+const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, onDelete, onViewRemitos }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -52,6 +54,50 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
     onUpdate(formData as Customer);
     setEditingId(null);
     setIsAdding(false);
+  };
+
+  const generateShippingLabel = (customer: Customer) => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const titleSize = 22;
+    const contentSize = 14;
+    const margin = 20;
+
+    // --- REMITENTE ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(titleSize);
+    doc.text('REMITENTE', margin, 35);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(contentSize);
+    doc.text('SINAPSIS 3D', margin, 48);
+    doc.text('Maria de los Angeles Crespo', margin, 58);
+    doc.text('2944914816', margin, 68);
+    doc.text('Bariloche - Rio Negro', margin, 78);
+
+    // Spacing to move to middle area
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.1);
+    doc.line(margin, 95, 190, 95);
+
+    // --- DESTINATARIO ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(titleSize);
+    doc.text('DESTINATARIO', margin, 115);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(contentSize);
+    doc.text(customer.name.toUpperCase(), margin, 128);
+    doc.text(`ATENCIÓN: ${customer.contactName || '---'}`, margin, 138);
+    doc.text(`TELÉFONO: ${customer.phone || '---'}`, margin, 148);
+    doc.text(`DIRECCIÓN: ${customer.street} ${customer.number}`, margin, 158);
+    doc.text(`LOCALIDAD: ${customer.city.toUpperCase()}`, margin, 168);
+    
+    doc.save(`Etiqueta_${customer.name.replace(/\s/g, '_')}.pdf`);
   };
 
   return (
@@ -301,14 +347,18 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
             </div>
 
             <div className="mt-5 pt-4 border-t border-slate-50 flex flex-wrap gap-2 items-center">
-              <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-50 text-slate-400 rounded-md">
-                {customer.taxCondition}
-              </span>
-              {customer.cuit && (
-                <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-50 text-slate-400 rounded-md flex items-center gap-1">
-                  <Hash size={8} /> {customer.cuit}
-                </span>
-              )}
+              <button 
+                onClick={() => onViewRemitos(customer.id)}
+                className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-900 text-white rounded-md flex items-center gap-1 hover:bg-slate-800 transition-colors"
+              >
+                <FileText size={8} /> Ver Remitos
+              </button>
+              <button 
+                onClick={() => generateShippingLabel(customer)}
+                className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-orange-600 text-white rounded-md flex items-center gap-1 hover:bg-orange-700 transition-colors"
+              >
+                <Package size={8} /> Etiqueta Envío
+              </button>
               {customer.instagram && (
                 <a 
                   href={`https://instagram.com/${customer.instagram.replace('@', '')}`}

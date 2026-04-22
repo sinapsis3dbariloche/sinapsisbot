@@ -12,16 +12,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const navItems = [
+    { id: 'customers', label: 'Clientes', icon: Users },
+    { id: 'remitos', label: 'Remitos', icon: FileText },
     { id: 'calc', label: 'Calculadora', icon: Calculator },
+    { id: 'queue', label: 'Producción', icon: ClipboardList },
     { id: 'stock', label: 'Stock', icon: Package },
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
     { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
-    { id: 'customers', label: 'Clientes', icon: Users },
-    { id: 'remitos', label: 'Remitos', icon: FileText },
     { id: 'maint', label: 'Mantenimiento', icon: Wrench },
     { id: 'maint-logs', label: 'Registros Hotend', icon: ListTodo, isSubItem: true },
     { id: 'maint-edit', label: 'Gestionar Máquinas', icon: MonitorSmartphone, isSubItem: true },
-    { id: 'queue', label: 'Producción', icon: ClipboardList },
   ];
 
   return (
