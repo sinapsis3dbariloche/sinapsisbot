@@ -243,7 +243,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
             <FileText size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Gestión de Remitos</h2>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Gestión de Ventas</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Documentación y Pagos</p>
           </div>
         </div>
@@ -254,7 +254,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
               <input 
                 type="text"
-                placeholder="Buscar remito..."
+                placeholder="Buscar venta..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900"
@@ -287,7 +287,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
             onClick={startNewRemito}
             className="w-full xl:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
           >
-            <Plus size={16} /> Generar Remito
+            <Plus size={16} /> Generar Venta
           </button>
         </div>
       </div>
@@ -296,7 +296,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
         <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-900 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center justify-between">
             <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest flex items-center gap-2">
-              <Plus size={18} className="text-orange-600" /> Nuevo Remito {newRemito.number}
+              <Plus size={18} className="text-orange-600" /> Nueva Venta No {newRemito.number}
             </h3>
             <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
@@ -376,7 +376,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-slate-100">
             <div className="text-left w-full md:w-auto">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Remito</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Total Venta</span>
               <span className="text-3xl font-black text-slate-900">$ {newRemito.total?.toLocaleString('es-AR')}</span>
             </div>
             
@@ -391,7 +391,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 onClick={handleSave}
                 className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
               >
-                <Save size={16} /> Emitir Remito
+                <Save size={16} /> Guardar Venta
               </button>
             </div>
           </div>
@@ -455,7 +455,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 <button 
                   onClick={() => generatePDF(remito)}
                   className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
-                  title="Descargar PDF"
+                  title="Descargar Remito"
                 >
                   <Download size={14} />
                 </button>
@@ -469,12 +469,12 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 <button 
                   onClick={() => handleEditRemito(remito)}
                   className="p-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all"
-                  title="Editar Remito"
+                  title="Editar Venta"
                 >
                   <Pencil size={14} />
                 </button>
                 <button 
-                  onClick={() => {if(confirm('¿Eliminar remito?')) onDelete(remito.id)}}
+                  onClick={() => {if(confirm('¿Eliminar venta?')) onDelete(remito.id)}}
                   className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                 >
                   <Trash2 size={16} />
@@ -486,7 +486,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
 
         {filteredRemitos.length === 0 && (
           <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No se encontraron remitos</p>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No se encontraron ventas</p>
           </div>
         )}
       </div>
@@ -498,7 +498,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-xl font-black text-slate-900 uppercase">Registrar Pago</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Remito {selectedRemito.number}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Venta No {selectedRemito.number}</p>
               </div>
               <button onClick={() => setSelectedRemito(null)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
             </div>
@@ -506,7 +506,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
             <div className="space-y-4">
               <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="font-bold text-slate-500">Total Remito:</span>
+                  <span className="font-bold text-slate-500">Total Venta:</span>
                   <span className="font-black text-slate-900">$ {selectedRemito.total.toLocaleString('es-AR')}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">

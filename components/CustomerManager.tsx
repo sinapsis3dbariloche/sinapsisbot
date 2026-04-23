@@ -351,7 +351,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
                 onClick={() => onViewRemitos(customer.id)}
                 className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-900 text-white rounded-md flex items-center gap-1 hover:bg-slate-800 transition-colors"
               >
-                <FileText size={8} /> Ver Remitos
+                <FileText size={8} /> Ver Ventas
               </button>
               <button 
                 onClick={() => generateShippingLabel(customer)}

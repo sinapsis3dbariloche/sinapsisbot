@@ -14,7 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Clientes', icon: Users },
-    { id: 'remitos', label: 'Remitos', icon: FileText },
+    { id: 'remitos', label: 'Ventas', icon: FileText },
     { id: 'calc', label: 'Calculadora', icon: Calculator },
     { id: 'stock', label: 'Stock', icon: Package },
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },

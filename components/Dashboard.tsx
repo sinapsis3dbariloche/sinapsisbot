@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Remito } from '../types';
 import { 
   BarChart, 
@@ -30,7 +30,22 @@ interface DashboardProps {
   remitos: Remito[];
 }
 
+const safeParseISO = (dateStr: string | undefined | null) => {
+  if (!dateStr) return new Date();
+  try {
+    return parseISO(dateStr);
+  } catch (e) {
+    return new Date();
+  }
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const stats = useMemo(() => {
     let totalPending = 0;
     let totalCollected = 0;
@@ -60,14 +75,14 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
       // Process payment history for precise monthly data
       if (r.paymentHistory && r.paymentHistory.length > 0) {
         r.paymentHistory.forEach(p => {
-          const monthKey = format(parseISO(p.date), 'yyyy-MM');
+          const monthKey = format(safeParseISO(p.date), 'yyyy-MM');
           if (monthlyData.hasOwnProperty(monthKey)) {
             monthlyData[monthKey] += p.amount;
           }
         });
       } else if (r.status === 'Pagado' || r.amountPaid > 0) {
         // Fallback: If no payment history but has amountPaid, use remito date
-        const monthKey = format(parseISO(r.date), 'yyyy-MM');
+        const monthKey = format(safeParseISO(r.date), 'yyyy-MM');
         if (monthlyData.hasOwnProperty(monthKey)) {
           monthlyData[monthKey] += r.amountPaid;
         }
@@ -75,19 +90,21 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
     });
 
     const chartData = Object.entries(monthlyData).map(([key, value]) => ({
-      name: format(parseISO(`${key}-01`), 'MMM', { locale: es }).toUpperCase(),
+      name: format(safeParseISO(`${key}-01`), 'MMM', { locale: es }).toUpperCase(),
       monto: value,
       rawDate: key
     })).sort((a, b) => a.rawDate.localeCompare(b.rawDate));
 
     const topPayers = Object.values(customerBalances)
       .sort((a, b) => b.paid - a.paid)
-      .slice(0, 5);
+      .slice(0, 5)
+      .map((c, i) => ({ ...c, id: `payer-${i}` }));
 
     const topDebtors = Object.values(customerBalances)
       .filter(c => c.debt > 0)
       .sort((a, b) => b.debt - a.debt)
-      .slice(0, 5);
+      .slice(0, 5)
+      .map((c, i) => ({ ...c, id: `debtor-${i}` }));
 
     return {
       totalPending,
@@ -103,7 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
       style: 'currency',
       currency: 'ARS',
       minimumFractionDigits: 0
-    }).format(value);
+    }).format(Math.max(0, value));
   };
 
   return (
@@ -191,50 +208,56 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
           </div>
         </div>
 
-        <div className="h-[350px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
-                dy={15}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
-                tickFormatter={(val) => `$${val/1000}k`}
-              />
-              <Tooltip 
-                cursor={{ fill: '#f8fafc', radius: 12 }}
-                contentStyle={{ 
-                  borderRadius: '16px', 
-                  border: 'none', 
-                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                  padding: '12px 16px'
-                }}
-                itemStyle={{ fontSize: '12px', fontWeight: 700, color: '#f97316' }}
-                labelStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 900, marginBottom: '4px', color: '#64748b' }}
-                formatter={(value: any) => [formatCurrency(value), 'COBRADO']}
-              />
-              <Bar 
-                dataKey="monto" 
-                radius={[8, 8, 8, 8]} 
-                barSize={40}
-              >
-                {stats.chartData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={index === stats.chartData.length - 1 ? '#f97316' : '#cbd5e1'} 
-                    className="hover:fill-orange-500 transition-colors duration-300"
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="h-[350px] w-full min-h-[350px]">
+          {isMounted ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
+                  dy={15}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
+                  tickFormatter={(val) => `$${val/1000}k`}
+                />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc', radius: 12 }}
+                  contentStyle={{ 
+                    borderRadius: '16px', 
+                    border: 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    padding: '12px 16px'
+                  }}
+                  itemStyle={{ fontSize: '12px', fontWeight: 700, color: '#f97316' }}
+                  labelStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 900, marginBottom: '4px', color: '#64748b' }}
+                  formatter={(value: any) => [formatCurrency(value), 'COBRADO']}
+                />
+                <Bar 
+                  dataKey="monto" 
+                  radius={[8, 8, 8, 8]} 
+                  barSize={40}
+                >
+                  {stats.chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={index === stats.chartData.length - 1 ? '#f97316' : '#cbd5e1'} 
+                      className="hover:fill-orange-500 transition-colors duration-300"
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-orange-100 border-t-orange-500 rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -255,7 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
 
           <div className="space-y-4">
             {stats.topPayers.map((customer, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+              <div key={customer.id} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
                 <div className="flex items-center gap-4">
                   <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xs font-black text-slate-400 shadow-sm border border-slate-50">
                     #{index + 1}
@@ -288,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos }) => {
 
           <div className="space-y-4">
             {stats.topDebtors.map((customer, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-red-50/20 rounded-2xl hover:bg-red-50/40 transition-colors border border-transparent hover:border-red-100/30">
+              <div key={customer.id} className="flex items-center justify-between p-4 bg-red-50/20 rounded-2xl hover:bg-red-50/40 transition-colors border border-transparent hover:border-red-100/30">
                 <div className="flex items-center gap-4">
                   <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xs font-black text-red-400 shadow-sm border border-red-50/50">
                     #{index + 1}
