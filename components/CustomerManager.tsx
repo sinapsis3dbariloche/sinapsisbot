@@ -301,48 +301,48 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
 
             <div className="space-y-3">
               {customer.phone && (
-                <div className="flex items-center justify-between group/item">
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <Phone size={14} className="text-slate-300" />
-                    <span className="text-xs font-medium">{customer.phone}</span>
-                  </div>
-                  <a 
-                    href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="p-1.5 text-green-600 bg-green-50 rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity hover:bg-green-100"
-                    title="WhatsApp"
-                  >
-                    <MessageCircle size={12} />
-                  </a>
-                </div>
+                <a 
+                  href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-3 text-slate-600 hover:text-green-600 transition-colors group/phone"
+                  title="Enviar WhatsApp"
+                >
+                  <MessageCircle size={14} className="text-slate-300 group-hover/phone:text-green-500" />
+                  <span className="text-xs font-medium">{customer.phone}</span>
+                </a>
               )}
               
               {customer.email && (
-                <div className="flex items-center gap-3 text-slate-600">
-                  <Mail size={14} className="text-slate-300" />
+                <a 
+                  href={`mailto:${customer.email}`}
+                  className="flex items-center gap-3 text-slate-600 hover:text-blue-600 transition-colors group/mail"
+                >
+                  <Mail size={14} className="text-slate-300 group-hover/mail:text-blue-500" />
                   <span className="text-xs font-medium truncate">{customer.email}</span>
-                </div>
+                </a>
               )}
 
               {customer.street && (
-                <div className="flex items-center justify-between group/item">
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <MapPin size={14} className="text-slate-300" />
-                    <span className="text-xs font-medium truncate">
-                      {customer.street} {customer.number}{customer.city ? `, ${customer.city}` : ''}
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${customer.street} ${customer.number}, ${customer.city || ''}`)}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-start gap-3 text-slate-600 hover:text-blue-600 transition-colors group/map"
+                  title="Ver en Google Maps"
+                >
+                  <MapPin size={14} className="text-slate-300 mt-0.5 group-hover/map:text-blue-500 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium leading-tight">
+                      {customer.street} {customer.number}
                     </span>
+                    {customer.city && (
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 group-hover/map:text-blue-400">
+                        {customer.city}
+                      </span>
+                    )}
                   </div>
-                  <a 
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${customer.street} ${customer.number}, ${customer.city || ''}`)}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="p-1.5 text-blue-600 bg-blue-50 rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity hover:bg-blue-100"
-                    title="Ver en Google Maps"
-                  >
-                    <MapPin size={12} />
-                  </a>
-                </div>
+                </a>
               )}
             </div>
 
