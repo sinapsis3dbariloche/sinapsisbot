@@ -5,14 +5,12 @@ import StockBoard from './components/StockBoard';
 import StockManager from './components/StockManager';
 import MaintenanceBoard from './components/MaintenanceBoard';
 import PrinterManager from './components/PrinterManager';
-import OrderQueue from './components/OrderQueue';
 import BudgetCalculator from './components/BudgetCalculator';
 import CustomerManager from './components/CustomerManager';
 import RemitosManager from './components/RemitosManager';
-import { StockItem, Order, Printer, Customer, Remito } from './types';
+import { StockItem, Printer, Customer, Remito } from './types';
 import { 
   subscribeToStock, 
-  subscribeToOrders, 
   subscribeToSettings, 
   subscribeToPrinters,
   subscribeToCustomers,
@@ -36,7 +34,6 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('customers');
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
   const [stock, setStock] = useState<StockItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [remitos, setRemitos] = useState<Remito[]>([]);
@@ -54,10 +51,6 @@ const App: React.FC = () => {
       setIsLoading(false);
       setIsSynced(true);
       setTimeout(() => setIsSynced(false), 2000);
-    });
-
-    const unsubOrders = subscribeToOrders((newOrders) => {
-      setOrders(newOrders);
     });
 
     const unsubPrinters = subscribeToPrinters((newPrinters) => {
@@ -82,7 +75,6 @@ const App: React.FC = () => {
 
     return () => {
       unsubStock();
-      unsubOrders();
       unsubPrinters();
       unsubCustomers();
       unsubRemitos();
@@ -232,7 +224,6 @@ const App: React.FC = () => {
           />
         )}
 
-        {activeTab === 'queue' && <OrderQueue orders={orders} />}
         {activeTab === 'calc' && (
           <BudgetCalculator 
             plaPrice={plaPrice} 

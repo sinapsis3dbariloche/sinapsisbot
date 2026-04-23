@@ -1,12 +1,4 @@
 
-export enum OrderStatus {
-  PENDIENTE = 'Pendiente',
-  EN_DISENO = 'En Diseño',
-  IMPRIMIENDO = 'Imprimiendo',
-  LISTO = 'Listo para entregar',
-  ENTREGADO = 'Entregado'
-}
-
 export enum FilamentType {
   PLA = 'PLA',
   PETG = 'PET-G'
@@ -35,15 +27,6 @@ export interface Printer {
   model: string;
   hasAMS: boolean;
   history: MaintenanceRecord[];
-}
-
-export interface Order {
-  id: string;
-  customer: string;
-  details: string;
-  status: OrderStatus;
-  priority: 'Alta' | 'Media' | 'Baja';
-  createdAt: string;
 }
 
 export interface RemitoItem {

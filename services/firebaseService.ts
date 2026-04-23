@@ -1,8 +1,8 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
-import { StockItem, Order, Printer, Customer, Remito } from '../types';
-import { INITIAL_STOCK, INITIAL_ORDERS, INITIAL_PRINTERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
+import { StockItem, Printer, Customer, Remito } from '../types';
+import { INITIAL_STOCK, INITIAL_PRINTERS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from '../constants';
 
 // CONFIGURACIÓN DE FIREBASE - SINAPSIS 3D
 const firebaseConfig = {
@@ -25,13 +25,6 @@ export const subscribeToStock = (callback: (stock: StockItem[]) => void) => {
     }
     const stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockItem));
     callback(stock);
-  });
-};
-
-export const subscribeToOrders = (callback: (orders: Order[]) => void) => {
-  return onSnapshot(collection(db, 'orders'), (snapshot) => {
-    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
-    callback(orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   });
 };
 
@@ -144,20 +137,11 @@ export const resetAllStockInDb = async () => {
   await batch.commit();
 };
 
-export const addOrderToDb = async (order: Order) => {
-  const docRef = doc(db, 'orders', order.id);
-  await setDoc(docRef, order);
-};
-
 const initializeDatabase = async () => {
   const batch = writeBatch(db);
   INITIAL_STOCK.forEach(item => {
     const ref = doc(db, 'stock', item.id);
     batch.set(ref, item);
-  });
-  INITIAL_ORDERS.forEach(order => {
-    const ref = doc(db, 'orders', order.id);
-    batch.set(ref, order);
   });
   INITIAL_PRINTERS.forEach(p => {
     const ref = doc(db, 'printers', p.id);

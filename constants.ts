@@ -1,5 +1,5 @@
 
-import { OrderStatus, FilamentType, StockItem, Order, Printer } from './types';
+import { FilamentType, StockItem, Printer } from './types';
 
 const plaColorsMap: Record<string, string> = {
   "Negro": "#1a1a1a", "Blanco": "#ffffff", "Gris": "#94a3b8", "Gris claro": "#cbd5e1",
@@ -32,11 +32,6 @@ export const INITIAL_STOCK: StockItem[] = [
     minClosed: 1,
     hexColor: color === "Negro" ? "#1a1a1a" : (color === "Blanco" ? "#ffffff" : "#94a3b8")
   }))
-];
-
-export const INITIAL_ORDERS: Order[] = [
-  { id: 'o1', customer: 'Juan', details: '2 Mates rojos', status: OrderStatus.PENDIENTE, priority: 'Media', createdAt: '2024-05-15' },
-  { id: 'o2', customer: 'Empresa X', details: '50 Llaveros logo', status: OrderStatus.IMPRIMIENDO, priority: 'Alta', createdAt: '2024-05-16' },
 ];
 
 export const INITIAL_PRINTERS: Printer[] = [
