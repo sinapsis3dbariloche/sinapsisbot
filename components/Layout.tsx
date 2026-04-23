@@ -1,5 +1,5 @@
 
-import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText } from 'lucide-react';
+import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard } from 'lucide-react';
 import React from 'react';
 
 interface LayoutProps {
@@ -12,6 +12,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Clientes', icon: Users },
     { id: 'remitos', label: 'Remitos', icon: FileText },
     { id: 'calc', label: 'Calculadora', icon: Calculator },

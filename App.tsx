@@ -8,6 +8,7 @@ import PrinterManager from './components/PrinterManager';
 import BudgetCalculator from './components/BudgetCalculator';
 import CustomerManager from './components/CustomerManager';
 import RemitosManager from './components/RemitosManager';
+import Dashboard from './components/Dashboard';
 import { StockItem, Printer, Customer, Remito } from './types';
 import { 
   subscribeToStock, 
@@ -31,7 +32,7 @@ import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_PO
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('customers');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
   const [stock, setStock] = useState<StockItem[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
@@ -167,6 +168,8 @@ const App: React.FC = () => {
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nube OK</span>
         </div>
+
+        {activeTab === 'dashboard' && <Dashboard remitos={remitos} />}
         
         {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
         
