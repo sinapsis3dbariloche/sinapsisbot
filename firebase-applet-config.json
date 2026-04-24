@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0615211615",
-  "appId": "1:272018863398:web:77b7b53d466a237c157de7",
-  "apiKey": "AIzaSyAlZpAKnLh1U4O7sDWudUAouqpBQcH8Pac",
-  "authDomain": "gen-lang-client-0615211615.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-a8e22f93-96ea-489a-934a-dc66428859ab",
-  "storageBucket": "gen-lang-client-0615211615.firebasestorage.app",
-  "messagingSenderId": "272018863398",
+  "projectId": "sinapsis3d-cb2ac",
+  "appId": "1:455886449458:web:e13064302cd37893ee852b",
+  "apiKey": "AIzaSyDJQTY8MbQ4c7F1pC1kCfwEz1bNk1O_NrY",
+  "authDomain": "sinapsis3d-cb2ac.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "sinapsis3d-cb2ac.firebasestorage.app",
+  "messagingSenderId": "455886449458",
   "measurementId": ""
 }

@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Auto sign-in anonymously to re-establish the connection for rules
         signInAnonymously(auth).catch(err => {
           if (err.code === 'auth/admin-restricted-operation' || err.code === 'auth/operation-not-allowed') {
-            console.warn("Anonymous sign-in is disabled in Firebase Console. Please enable it in Authentication > Sign-in method.");
+            console.warn("Anonymous sign-in check failed. If you enabled it, wait a moment or check if the domain is authorized.");
             try {
               const sessionData = JSON.parse(savedSession);
               setUser(sessionData);
@@ -111,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (err: any) {
         console.error("Login session failed:", err);
         if (err.code === 'auth/admin-restricted-operation' || err.code === 'auth/operation-not-allowed') {
-          throw new Error('El inicio de sesión anónimo está desactivado en Firebase. Por favor, habilítalo en la consola de Firebase (Authentication > Sign-in method > Anonymous).');
+          throw new Error('Error de configuración de Firebase: El inicio de sesión anónimo no parece estar funcionando o el dominio no está autorizado.');
         }
         throw new Error('Error al establecer conexión segura con el servidor');
       } finally {
