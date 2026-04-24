@@ -34,13 +34,15 @@ import {
   deleteExpenseFromDb,
   updateRemitoInDb,
   deleteRemitoFromDb,
-  getNextRemitoNumber
+  getNextRemitoNumber,
+  initializeDatabase
 } from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 
 import { useAuth } from './lib/AuthContext';
 import Login from './components/Login';
+import { testFirestoreConnection } from './lib/firebase';
 
 const App: React.FC = () => {
   const { user, loading, isAdmin } = useAuth();
@@ -62,6 +64,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!user || !isAdmin) return;
+
+    // Verify connection once authenticated
+    testFirestoreConnection();
+    
+    // Run initialization once per admin session if needed
+    initializeDatabase().catch(err => console.error("Auto-init failed:", err));
 
     const unsubStock = subscribeToStock((newStock) => {
       setStock(newStock);

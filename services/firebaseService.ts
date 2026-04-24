@@ -311,6 +311,6 @@ const initializeDatabase = async () => {
 };
 
 // Call initialization immediately
-initializeDatabase();
+// initializeDatabase();
 
-export { db };
+export { db, initializeDatabase };
