@@ -25,8 +25,21 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
 
   const handleEdit = (customer: Customer) => {
     setEditingId(customer.id);
-    setFormData(customer);
-    setIsAdding(false);
+    setFormData({
+      street: '',
+      number: '',
+      city: 'Bariloche',
+      contactName: '',
+      phone: '',
+      email: '',
+      instagram: '',
+      cuit: '',
+      taxCondition: 'Consumidor Final',
+      notes: '',
+      history: [],
+      ...customer
+    });
+    setIsAdding(true);
   };
 
   const handleAddNew = () => {
@@ -136,7 +149,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
       {(editingId === 'new' || isAdding) && (
         <div className="bg-white p-6 rounded-[2rem] border-2 border-blue-100 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center justify-between">
-            <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest">Nuevo Registro de Cliente</h3>
+            <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest">
+              {editingId === 'new' ? 'Nuevo Registro de Cliente' : 'Editar Cliente'}
+            </h3>
             <button onClick={() => {setEditingId(null); setIsAdding(false);}} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           

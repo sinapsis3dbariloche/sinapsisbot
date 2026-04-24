@@ -1,6 +1,7 @@
 
-import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard } from 'lucide-react';
+import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign } from 'lucide-react';
 import React from 'react';
+import { useAuth } from '../lib/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,17 +11,19 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const { logout, user } = useAuth();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'customers', label: 'Clientes', icon: Users },
     { id: 'remitos', label: 'Ventas', icon: FileText },
+    { id: 'expenses', label: 'Gastos', icon: DollarSign },
+    { id: 'customers', label: 'Clientes', icon: Users },
+    { id: 'suppliers', label: 'Proveedores', icon: Briefcase },
     { id: 'calc', label: 'Calculadora', icon: Calculator },
     { id: 'stock', label: 'Stock', icon: Package },
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
     { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
     { id: 'maint', label: 'Mantenimiento', icon: Wrench },
-    { id: 'maint-logs', label: 'Registros Hotend', icon: ListTodo, isSubItem: true },
     { id: 'maint-edit', label: 'Gestionar Máquinas', icon: MonitorSmartphone, isSubItem: true },
   ];
 
@@ -63,14 +66,29 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
             })}
           </nav>
 
-          <div className="p-6">
-            <div className="bg-slate-900/50 rounded-[2rem] p-5 border border-slate-800 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-600 flex items-center justify-center text-white font-black text-xs shadow-inner shadow-orange-900/40">S3D</div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">Admin</span>
-                <span className="text-[9px] text-slate-500 font-bold uppercase">Online</span>
+          <div className="p-6 space-y-4">
+            {user && (
+              <div className="bg-slate-900/50 rounded-[2rem] p-4 border border-slate-800 flex items-center gap-4 overflow-hidden">
+                <img 
+                  src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}`} 
+                  alt="Avatar" 
+                  className="w-10 h-10 rounded-xl"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest truncate">{user.displayName || 'Admin'}</span>
+                  <span className="text-[8px] text-slate-500 font-bold uppercase truncate">{user.email}</span>
+                </div>
               </div>
-            </div>
+            )}
+            
+            <button 
+              onClick={logout}
+              className="w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] font-black uppercase tracking-widest text-[11px] text-red-500 hover:bg-red-500/10 transition-all duration-300"
+            >
+              <LogOut size={18} />
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </aside>

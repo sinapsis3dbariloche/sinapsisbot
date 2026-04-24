@@ -4,7 +4,7 @@ import { Remito, Customer, RemitoItem } from '../types';
 import { 
   FileText, Plus, Search, Trash2, Download, Send, CheckCircle, 
   Clock, X, Save, User, Calendar, Trash, MessageCircle, Mail,
-  DollarSign, ChevronRight, Pencil
+  DollarSign, ChevronRight, Pencil, List
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -296,7 +296,12 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
         <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-900 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center justify-between">
             <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest flex items-center gap-2">
-              <Plus size={18} className="text-orange-600" /> Nueva Venta No {newRemito.number}
+              {remitos.some(r => r.id === newRemito.id) ? (
+                <Pencil size={18} className="text-orange-600" />
+              ) : (
+                <Plus size={18} className="text-orange-600" />
+              )}
+              {remitos.some(r => r.id === newRemito.id) ? 'Editar Venta' : 'Nueva Venta'} No {newRemito.number}
             </h3>
             <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
@@ -399,89 +404,15 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
       )}
 
       <div className="space-y-3">
-        {/* List Header - Desktop Only */}
-        <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          <div className="col-span-2">Número / Fecha</div>
-          <div className="col-span-3">Cliente</div>
-          <div className="col-span-2 text-center">Estado</div>
-          <div className="col-span-2 text-right">Total</div>
-          <div className="col-span-3 text-right">Acciones</div>
-        </div>
-
         {filteredRemitos.map(remito => (
-          <div key={remito.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-4 md:px-8 md:py-4 hover:shadow-md transition-all group flex flex-col md:block">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-              {/* Number & Date */}
-              <div className="col-span-2">
-                <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest block w-fit mb-1">
-                  {remito.number}
-                </span>
-                <p className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5 whitespace-nowrap">
-                  <Calendar size={10} /> {new Date(remito.date).toLocaleDateString('es-AR')}
-                </p>
-              </div>
-
-              {/* Customer */}
-              <div className="col-span-3">
-                <h3 className="font-black text-slate-900 uppercase text-sm leading-tight truncate" title={remito.customerName}>
-                  {remito.customerName}
-                </h3>
-                {remito.notes && (
-                  <p className="text-[9px] text-slate-400 truncate italic mt-0.5">{remito.notes}</p>
-                )}
-              </div>
-
-              {/* Status */}
-              <div className="col-span-2 md:text-center">
-                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
-                  remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
-                  remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
-                  'bg-orange-100 text-orange-700'
-                }`}>
-                  {remito.status}
-                </span>
-              </div>
-
-              {/* Total */}
-              <div className="col-span-2 text-left md:text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase md:hidden mb-1">Total</p>
-                <span className="text-lg font-black text-slate-900 tracking-tighter">
-                  $ {remito.total.toLocaleString('es-AR')}
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="col-span-3 flex justify-end items-center gap-2">
-                <button 
-                  onClick={() => generatePDF(remito)}
-                  className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
-                  title="Descargar Remito"
-                >
-                  <Download size={14} />
-                </button>
-                <button 
-                  onClick={() => setSelectedRemito(remito)}
-                  className="p-2.5 bg-orange-100 text-orange-700 rounded-xl hover:bg-orange-200 transition-all"
-                  title="Registrar Pago"
-                >
-                  <DollarSign size={14} />
-                </button>
-                <button 
-                  onClick={() => handleEditRemito(remito)}
-                  className="p-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all"
-                  title="Editar Venta"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button 
-                  onClick={() => {if(confirm('¿Eliminar venta?')) onDelete(remito.id)}}
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
+          <RemitoRow 
+            key={remito.id}
+            remito={remito}
+            onGeneratePDF={generatePDF}
+            onRegisterPayment={setSelectedRemito}
+            onEdit={handleEditRemito}
+            onDelete={onDelete}
+          />
         ))}
 
         {filteredRemitos.length === 0 && (
@@ -573,6 +504,140 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 Confirmar Pago
               </button>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface RemitoRowProps {
+  remito: Remito;
+  onGeneratePDF: (remito: Remito) => void;
+  onRegisterPayment: (remito: Remito) => void;
+  onEdit: (remito: Remito) => void;
+  onDelete: (id: string) => void;
+}
+
+const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegisterPayment, onEdit, onDelete }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:border-orange-100 transition-all">
+      <div className="p-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        {/* Number & Date */}
+        <div className="col-span-2">
+          <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest block w-fit mb-1">
+            {remito.number}
+          </span>
+          <p className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1.5 whitespace-nowrap">
+            <Calendar size={10} /> {new Date(remito.date).toLocaleDateString('es-AR')}
+          </p>
+        </div>
+
+        {/* Customer */}
+        <div className="col-span-3">
+          <h3 className="font-black text-slate-900 uppercase text-sm leading-tight truncate" title={remito.customerName}>
+            {remito.customerName}
+          </h3>
+          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{remito.items.length} ítems</p>
+        </div>
+
+        {/* Status */}
+        <div className="col-span-2 md:text-center">
+          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+            remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
+            remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
+            'bg-orange-100 text-orange-700'
+          }`}>
+            {remito.status}
+          </span>
+        </div>
+
+        {/* Total */}
+        <div className="col-span-2 text-left md:text-right">
+          <span className="text-lg font-black text-slate-900 tracking-tighter">
+            $ {remito.total.toLocaleString('es-AR')}
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="col-span-3 flex justify-end items-center gap-1.5">
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
+            title="Ver detalle"
+          >
+            <List size={16} />
+          </button>
+          <button 
+            onClick={() => onGeneratePDF(remito)}
+            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all"
+            title="Descargar Remito"
+          >
+            <Download size={16} />
+          </button>
+          <button 
+            onClick={() => onRegisterPayment(remito)}
+            className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all"
+            title="Registrar Pago"
+          >
+            <DollarSign size={16} />
+          </button>
+          <button 
+            onClick={() => onEdit(remito)}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+            title="Editar Venta"
+          >
+            <Pencil size={16} />
+          </button>
+          <button 
+            onClick={() => {if(confirm('¿Eliminar venta?')) onDelete(remito.id)}}
+            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="px-8 pb-6 pt-4 border-t border-slate-50 bg-slate-50/50 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="space-y-2">
+            <div className="grid grid-cols-12 gap-2 px-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+              <div className="col-span-7">Descripción</div>
+              <div className="col-span-2 text-center">Cant.</div>
+              <div className="col-span-3 text-right">Subtotal</div>
+            </div>
+            {remito.items.map((item, idx) => (
+              <div key={idx} className="grid grid-cols-12 gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 items-center">
+                <div className="col-span-7 text-[10px] font-bold text-slate-700 uppercase">{item.description}</div>
+                <div className="col-span-2 text-[10px] font-black text-slate-400 text-center">x{item.quantity}</div>
+                <div className="col-span-3 text-[10px] font-black text-slate-900 text-right">${item.total.toLocaleString()}</div>
+              </div>
+            ))}
+            {(remito.notes || remito.paymentHistory?.length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {remito.notes && (
+                  <div className="p-3 bg-white rounded-xl border border-slate-100">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 font-black">Observaciones:</p>
+                    <p className="text-[10px] text-slate-600 italic">"{remito.notes}"</p>
+                  </div>
+                )}
+                {remito.paymentHistory && remito.paymentHistory.length > 0 && (
+                  <div className="p-3 bg-white rounded-xl border border-slate-100">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 font-black">Historial de Pagos:</p>
+                    <div className="space-y-1">
+                      {remito.paymentHistory.map((p, i) => (
+                        <div key={i} className="flex justify-between items-center text-[9px] text-slate-500 font-bold">
+                          <span>{new Date(p.date).toLocaleDateString()}</span>
+                          <span className="text-green-600">$ {p.amount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

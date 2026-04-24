@@ -8,13 +8,17 @@ import PrinterManager from './components/PrinterManager';
 import BudgetCalculator from './components/BudgetCalculator';
 import CustomerManager from './components/CustomerManager';
 import RemitosManager from './components/RemitosManager';
+import SupplierManager from './components/SupplierManager';
+import ExpenseManager from './components/ExpenseManager';
 import Dashboard from './components/Dashboard';
-import { StockItem, Printer, Customer, Remito } from './types';
+import { StockItem, Printer, Customer, Remito, Supplier, Expense } from './types';
 import { 
   subscribeToStock, 
   subscribeToSettings, 
   subscribeToPrinters,
   subscribeToCustomers,
+  subscribeToSuppliers,
+  subscribeToExpenses,
   subscribeToRemitos,
   updateStockItemInDb, 
   updateSettings, 
@@ -24,6 +28,10 @@ import {
   deletePrinterFromDb,
   updateCustomerInDb,
   deleteCustomerFromDb,
+  updateSupplierInDb,
+  deleteSupplierFromDb,
+  updateExpenseInDb,
+  deleteExpenseFromDb,
   updateRemitoInDb,
   deleteRemitoFromDb,
   getNextRemitoNumber
@@ -31,25 +39,33 @@ import {
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 
+import { useAuth } from './lib/AuthContext';
+import Login from './components/Login';
+
 const App: React.FC = () => {
+  const { user, loading, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
   const [stock, setStock] = useState<StockItem[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [remitos, setRemitos] = useState<Remito[]>([]);
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
   const [postProcessPrice, setPostProcessPrice] = useState<number>(DEFAULT_POST_PROCESS_PRICE);
   const [hotendStock, setHotendStock] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSynced, setIsSynced] = useState(false);
 
   useEffect(() => {
+    if (!user || !isAdmin) return;
+
     const unsubStock = subscribeToStock((newStock) => {
       setStock(newStock);
-      setIsLoading(false);
+      setIsLoadingData(false);
       setIsSynced(true);
       setTimeout(() => setIsSynced(false), 2000);
     });
@@ -60,6 +76,14 @@ const App: React.FC = () => {
 
     const unsubCustomers = subscribeToCustomers((newCustomers) => {
       setCustomers(newCustomers);
+    });
+
+    const unsubSuppliers = subscribeToSuppliers((newSuppliers) => {
+      setSuppliers(newSuppliers);
+    });
+
+    const unsubExpenses = subscribeToExpenses((newExpenses) => {
+      setExpenses(newExpenses);
     });
 
     const unsubRemitos = subscribeToRemitos((newRemitos) => {
@@ -78,10 +102,12 @@ const App: React.FC = () => {
       unsubStock();
       unsubPrinters();
       unsubCustomers();
+      unsubSuppliers();
+      unsubExpenses();
       unsubRemitos();
       unsubSettings();
     };
-  }, []);
+  }, [user, isAdmin]);
 
   const handleUpdateStockItem = async (id: string, updates: Partial<StockItem>) => {
     const item = stock.find(s => s.id === id);
@@ -118,6 +144,22 @@ const App: React.FC = () => {
     await deleteCustomerFromDb(id);
   };
 
+  const handleUpdateSupplier = async (supplier: Supplier) => {
+    await updateSupplierInDb(supplier);
+  };
+
+  const handleDeleteSupplier = async (id: string) => {
+    await deleteSupplierFromDb(id);
+  };
+
+  const handleUpdateExpense = async (expense: Expense) => {
+    await updateExpenseInDb(expense);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    await deleteExpenseFromDb(id);
+  };
+
   const handleUpdateRemito = async (remito: Remito) => {
     await updateRemitoInDb(remito);
   };
@@ -152,11 +194,23 @@ const App: React.FC = () => {
     setActiveTab('remitos');
   };
 
-  if (isLoading) {
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 gap-4">
+        <Loader2 className="animate-spin text-orange-600" size={48} />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return <Login />;
+  }
+
+  if (isLoadingData) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
         <Loader2 className="animate-spin text-orange-600" size={48} />
-        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs animate-pulse">Conectando con Sinapsis 3D...</p>
+        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs animate-pulse">Sincronizando datos...</p>
       </div>
     );
   }
@@ -169,7 +223,7 @@ const App: React.FC = () => {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nube OK</span>
         </div>
 
-        {activeTab === 'dashboard' && <Dashboard remitos={remitos} />}
+        {activeTab === 'dashboard' && <Dashboard remitos={remitos} expenses={expenses} />}
         
         {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
         
@@ -209,7 +263,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {(activeTab === 'maint' || activeTab === 'maint-logs') && (
+        {activeTab === 'maint' && (
           <MaintenanceBoard 
             printers={printers} 
             onUpdatePrinter={handleUpdatePrinter}
@@ -243,6 +297,23 @@ const App: React.FC = () => {
             onUpdate={handleUpdateCustomer}
             onDelete={handleDeleteCustomer}
             onViewRemitos={handleViewRemitosByCustomer}
+          />
+        )}
+
+        {activeTab === 'suppliers' && (
+          <SupplierManager 
+            suppliers={suppliers}
+            onUpdate={handleUpdateSupplier}
+            onDelete={handleDeleteSupplier}
+          />
+        )}
+
+        {activeTab === 'expenses' && (
+          <ExpenseManager 
+            expenses={expenses}
+            suppliers={suppliers}
+            onUpdate={handleUpdateExpense}
+            onDelete={handleDeleteExpense}
           />
         )}
 

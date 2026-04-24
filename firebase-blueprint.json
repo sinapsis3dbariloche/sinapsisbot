@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "StockItem": {
+      "title": "Stock Item",
+      "description": "Represents a filament roll in stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "color": { "type": "string" },
+        "type": { "type": "string", "enum": ["PLA", "PET-G"] },
+        "closedCount": { "type": "number" },
+        "openCount": { "type": "number" },
+        "minClosed": { "type": "number" },
+        "hexColor": { "type": "string" }
+      },
+      "required": ["id", "color", "type", "closedCount", "openCount"]
+    },
+    "Printer": {
+      "title": "Printer",
+      "description": "Represents a 3D printer in the workshop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "model": { "type": "string" },
+        "hasAMS": { "type": "boolean" },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "#/entities/MaintenanceRecord" }
+        }
+      },
+      "required": ["id", "name", "model", "hasAMS"]
+    },
+    "MaintenanceRecord": {
+      "title": "Maintenance Record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string", "enum": ["Cambio de Hotend", "Limpieza", "Engrase", "General"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "Remito": {
+      "title": "Remito (Sale)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "number": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "date": { "type": "string" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pendiente", "Parcial", "Pagado"] },
+        "amountPaid": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Customer": {
+      "title": "Customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "cuit": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "AuthorizedUser": {
+      "title": "Authorized User",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["email", "role"]
+    },
+    "Settings": {
+      "title": "Application Settings",
+      "type": "object",
+      "properties": {
+        "plaPrice": { "type": "number" },
+        "petgPrice": { "type": "number" },
+        "designPrice": { "type": "number" },
+        "postProcessPrice": { "type": "number" }
+      }
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "instagram": { "type": "string" },
+        "web": { "type": "string" },
+        "street": { "type": "string" },
+        "number": { "type": "string" },
+        "city": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "total": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "date", "supplierId", "total", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/stock": { "schema": "StockItem", "description": "Filament stock management" },
+    "/printers": { "schema": "Printer", "description": "Workshop printers" },
+    "/remitos": { "schema": "Remito", "description": "Sales and remitos" },
+    "/customers": { "schema": "Customer", "description": "Customer database" },
+    "/suppliers": { "schema": "Supplier", "description": "Supplier database" },
+    "/expenses": { "schema": "Expense", "description": "Business expenses" },
+    "/authorized_users": { "schema": "AuthorizedUser", "description": "System access control" },
+    "/config/settings": { "schema": "Settings", "description": "Global prices and configurations" }
+  }
+}

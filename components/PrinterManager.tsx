@@ -120,19 +120,35 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
                 <tr key={printer.id} className="group hover:bg-slate-50/50 transition-all">
                   <td className="px-8 py-5">
                     {editingId === printer.id ? (
-                      <div className="flex gap-4">
-                        <input 
-                          type="text" 
-                          value={formData.name} 
-                          onChange={e => setFormData({...formData, name: e.target.value})}
-                          className="bg-slate-100 border-none rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-orange-600"
-                        />
-                        <input 
-                          type="text" 
-                          value={formData.model} 
-                          onChange={e => setFormData({...formData, model: e.target.value})}
-                          className="bg-slate-100 border-none rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-orange-600"
-                        />
+                      <div className="flex items-center gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest block">Nombre</label>
+                          <input 
+                            type="text" 
+                            value={formData.name} 
+                            onChange={e => setFormData({...formData, name: e.target.value})}
+                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-orange-600 outline-none w-40"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest block">Modelo</label>
+                          <input 
+                            type="text" 
+                            value={formData.model} 
+                            onChange={e => setFormData({...formData, model: e.target.value})}
+                            className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-orange-600 outline-none w-40"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest block">AMS</label>
+                          <button 
+                            onClick={() => setFormData({...formData, hasAMS: !formData.hasAMS})}
+                            className={`flex items-center justify-center p-2 rounded-lg border transition-all ${formData.hasAMS ? 'bg-orange-600 text-white border-orange-600' : 'bg-slate-50 text-slate-300 border-slate-100'}`}
+                            title={formData.hasAMS ? 'Con AMS' : 'Sin AMS'}
+                          >
+                            {formData.hasAMS ? <CheckSquare size={16} /> : <Square size={16} />}
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div>

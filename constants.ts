@@ -34,16 +34,102 @@ export const INITIAL_STOCK: StockItem[] = [
   }))
 ];
 
+export const INITIAL_CUSTOMERS: Customer[] = [
+  {
+    id: 'c1',
+    name: 'ALEGRARTE',
+    contactName: 'MONI',
+    phone: '',
+    email: '',
+    street: 'Moreno 237',
+    number: '',
+    city: 'BARILOCHE',
+    cuit: '',
+    taxCondition: 'Consumidor Final',
+    instagram: 'ALEGRARTE_ARTISTICA',
+    createdAt: '2026-04-22T00:00:00Z'
+  },
+  {
+    id: 'c2',
+    name: 'COTILLON BICOLOR',
+    contactName: 'VALERÍA',
+    phone: '2944820433',
+    email: '',
+    street: 'Las Retamas 315',
+    number: '',
+    city: 'VILLA LA ANGOSTURA',
+    cuit: '',
+    taxCondition: 'Consumidor Final',
+    instagram: 'TIENDA.BICOLOR',
+    createdAt: '2026-04-22T00:00:00Z'
+  },
+  {
+    id: 'c3',
+    name: 'HOSPITAL ZONAL BARILOCHE',
+    contactName: 'PAO ASENCIO (IG)',
+    phone: '',
+    email: '',
+    street: '',
+    number: '',
+    city: 'BARILOCHE',
+    cuit: '',
+    taxCondition: 'Consumidor Final',
+    createdAt: '2026-04-22T00:00:00Z'
+  },
+  {
+    id: 'c4',
+    name: 'LUCAS PASSALACQUA',
+    contactName: 'LUCAS PASSALACQUA',
+    phone: '2944324097',
+    email: 'lucaspassa@gmail.com',
+    street: 'Jose Hernandez 228',
+    number: '',
+    city: 'BARILOCHE',
+    cuit: '',
+    taxCondition: 'Consumidor Final',
+    instagram: 'LUQUIPASSA',
+    notes: 'Cliente de prueba',
+    createdAt: '2026-04-22T00:00:00Z'
+  }
+];
+
+const hospitalZonalId = 'c3';
+export const INITIAL_REMITOS: Remito[] = [
+  {
+    id: 'r1',
+    number: '0001 - 00046',
+    customerId: hospitalZonalId,
+    customerName: 'HOSPITAL ZONAL BARILOCHE',
+    date: '2026-04-22',
+    items: [
+      { description: 'Varios impresión 3D', quantity: 1, unitPrice: 39000, total: 39000 }
+    ],
+    total: 39000,
+    status: 'Pagado',
+    amountPaid: 39000,
+    createdAt: '2026-04-22T00:00:00Z'
+  }
+];
+
 export const INITIAL_PRINTERS: Printer[] = [
-  { id: 'p1', name: 'Bambu A1 Mini', model: 'A1 Mini', hasAMS: false, history: [] },
-  { id: 'p2', name: 'Bambu Normal #1', model: 'P1S / X1C', hasAMS: true, history: [] },
-  { id: 'p3', name: 'Bambu Normal #2', model: 'P1S / X1C', hasAMS: true, history: [] }
+  { 
+    id: 'p1', 
+    name: 'BAMBU A1 MINI', 
+    model: 'A1 Mini', 
+    hasAMS: true, 
+    history: [
+      { id: 'h1', date: '2026-01-30', type: 'Cambio de Hotend', notes: 'Cambio preventivo. Se utilizó 1 unidad del stock central.' }
+    ] 
+  },
+  { id: 'p2', name: 'BAMBU LAB A1 #1', model: 'A1', hasAMS: true, history: [] },
+  { id: 'p3', name: 'BAMBU LAB A1 #2', model: 'A1', hasAMS: true, history: [] }
 ];
 
 export const DEFAULT_PLA_PRICE = 25000;
 export const DEFAULT_PETG_PRICE = 32000;
 export const DEFAULT_DESIGN_PRICE = 8000;
 export const DEFAULT_POST_PROCESS_PRICE = 7000;
+export const DEFAULT_HOTEND_STOCK = 2;
 
 export const SYSTEM_INSTRUCTION = `Eres SinapsisBot, el asistente operativo de Sinapsis 3D Bariloche. 
 Tu objetivo es ayudar a Lucas, el dueño, a gestionar el stock y calcular presupuestos de impresión 3D. 

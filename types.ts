@@ -72,6 +72,40 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  instagram: string;
+  web: string;
+  street: string;
+  number: string;
+  city: string;
+  notes: string;
+  createdAt: string;
+}
+
+export interface ExpenseItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Expense {
+  id: string;
+  date: string;
+  supplierId: string;
+  supplierName: string;
+  items: ExpenseItem[];
+  total: number;
+  notes?: string;
+  createdAt: string;
+}
+
 // Interface for chat history messages used by SinapsisBot
 export interface ChatMessage {
   role: 'user' | 'model';

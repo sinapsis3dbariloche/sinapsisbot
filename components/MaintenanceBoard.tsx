@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Printer, MaintenanceRecord } from '../types';
-import { Wrench, Calendar, History, Plus, Minus, AlertTriangle, Layers, ChevronRight, Activity, Box } from 'lucide-react';
+import { Wrench, Calendar, History, Plus, Minus, AlertTriangle, Layers, ChevronRight, Activity, Box, Loader2, Trash2, Edit2, Check, X } from 'lucide-react';
 
 interface MaintenanceBoardProps {
   printers: Printer[];
@@ -17,19 +17,69 @@ const MaintenanceBoard: React.FC<MaintenanceBoardProps> = ({
   onUpdateHotendStock 
 }) => {
   const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState<string>('');
+
+  const handleDeleteRecord = async (printerId: string, recordId: string) => {
+    const printer = printers.find(p => p.id === printerId);
+    if (!printer) return;
+
+    const recordToDelete = printer.history.find(r => r.id === recordId);
+    if (!confirm(`¿Eliminar este registro de "${recordToDelete?.type}"?`)) return;
+
+    const isHotendChange = recordToDelete?.type === 'Cambio de Hotend';
+    const updatedPrinter: Printer = {
+      ...printer,
+      history: printer.history.filter(r => r.id !== recordId)
+    };
+
+    try {
+      if (isHotendChange) {
+        await onUpdateHotendStock(hotendStock + 1);
+      }
+      await onUpdatePrinter(updatedPrinter);
+    } catch (error) {
+      console.error('Error deleting record:', error);
+      alert('Error al eliminar el registro.');
+    }
+  };
+
+  const handleUpdateRecordDate = async (printerId: string, recordId: string) => {
+    const printer = printers.find(p => p.id === printerId);
+    if (!printer || !editDate) return;
+
+    const updatedPrinter: Printer = {
+      ...printer,
+      history: printer.history.map(r => 
+        r.id === recordId ? { ...r, date: new Date(editDate).toISOString() } : r
+      )
+    };
+
+    try {
+      await onUpdatePrinter(updatedPrinter);
+      setEditingRecordId(null);
+    } catch (error) {
+      console.error('Error updating record date:', error);
+      alert('Error al actualizar la fecha.');
+    }
+  };
 
   const handleRegisterHotendChange = async (printerId: string) => {
     if (hotendStock <= 0) {
-      alert('⚠️ No hay hotends en stock. Por favor, cargue stock de repuestos antes de registrar el cambio.');
+      setStatusMsg({ type: 'error', text: '⚠️ No hay hotends en stock.' });
+      setTimeout(() => setStatusMsg(null), 3000);
       return;
     }
 
     const printer = printers.find(p => p.id === printerId);
     if (!printer) return;
 
-    if (!confirm(`¿Confirmar cambio de hotend en ${printer.name}? Se descontará 1 unidad del stock de repuestos.`)) {
-      return;
-    }
+    setIsProcessing(true);
+    setStatusMsg(null);
 
     const newRecord: MaintenanceRecord = {
       id: Date.now().toString(),
@@ -43,12 +93,23 @@ const MaintenanceBoard: React.FC<MaintenanceBoardProps> = ({
       history: [newRecord, ...printer.history]
     };
 
-    // Descontar del stock
-    await onUpdateHotendStock(hotendStock - 1);
     // Actualizar impresora
-    await onUpdatePrinter(updatedPrinter);
-    
-    alert(`Cambio de Hotend registrado y stock actualizado.`);
+    try {
+      // 1. Descontar del stock
+      await onUpdateHotendStock(hotendStock - 1);
+      // 2. Actualizar impresora
+      await onUpdatePrinter(updatedPrinter);
+      
+      setStatusMsg({ type: 'success', text: '✅ Cambio registrado exitosamente.' });
+      setConfirmingId(null);
+      setTimeout(() => setStatusMsg(null), 3000);
+    } catch (error) {
+      console.error('Error in handleRegisterHotendChange:', error);
+      setStatusMsg({ type: 'error', text: '❌ Error al registrar. Intente nuevamente.' });
+      setTimeout(() => setStatusMsg(null), 3000);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getTimeSinceLastChange = (history: MaintenanceRecord[]) => {
@@ -147,13 +208,44 @@ const MaintenanceBoard: React.FC<MaintenanceBoardProps> = ({
                   </div>
                 </div>
 
-                <button 
-                  disabled={noStock}
-                  onClick={() => handleRegisterHotendChange(printer.id)}
-                  className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg active:scale-95 ${noStock ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-600/20 hover:bg-orange-700'}`}
-                >
-                  <Plus size={16} /> {noStock ? 'Sin Repuestos' : 'Registrar Cambio'}
-                </button>
+                {statusMsg && (
+                  <div className={`p-4 rounded-xl text-[10px] font-black uppercase text-center animate-in zoom-in duration-300 ${statusMsg.type === 'success' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                    {statusMsg.text}
+                  </div>
+                )}
+
+                {confirmingId === printer.id ? (
+                  <div className="flex gap-2 animate-in slide-in-from-bottom-2 duration-300">
+                    <button 
+                      onClick={() => setConfirmingId(null)}
+                      disabled={isProcessing}
+                      className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={() => handleRegisterHotendChange(printer.id)}
+                      disabled={isProcessing}
+                      className="flex-[2] py-4 bg-orange-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20 flex items-center justify-center gap-2"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="animate-spin" size={14} /> Procesando...
+                        </>
+                      ) : (
+                        'Confirmar'
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    disabled={noStock || isProcessing}
+                    onClick={() => setConfirmingId(printer.id)}
+                    className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg active:scale-95 ${noStock ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-600/20 hover:bg-orange-700'}`}
+                  >
+                    <Plus size={16} /> {noStock ? 'Sin Repuestos' : 'Registrar Cambio'}
+                  </button>
+                )}
               </div>
 
               <button 
@@ -181,7 +273,54 @@ const MaintenanceBoard: React.FC<MaintenanceBoardProps> = ({
                           <div className="flex-1 border-b border-slate-50 pb-4">
                             <div className="flex justify-between items-center mb-1">
                               <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{record.type}</p>
-                              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(record.date).toLocaleDateString()}</p>
+                              
+                              <div className="flex items-center gap-2">
+                                {editingRecordId === record.id ? (
+                                  <div className="flex items-center gap-1 animate-in zoom-in duration-200">
+                                    <input 
+                                      type="date"
+                                      value={editDate}
+                                      onChange={(e) => setEditDate(e.target.value)}
+                                      className="text-[9px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5 font-bold outline-none focus:border-orange-500"
+                                    />
+                                    <button 
+                                      onClick={() => handleUpdateRecordDate(printer.id, record.id)}
+                                      className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                    >
+                                      <Check size={12} />
+                                    </button>
+                                    <button 
+                                      onClick={() => setEditingRecordId(null)}
+                                      className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(record.date).toLocaleDateString()}</p>
+                                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                                      <button 
+                                        onClick={() => {
+                                          setEditingRecordId(record.id);
+                                          setEditDate(new Date(record.date).toISOString().split('T')[0]);
+                                        }}
+                                        className="p-1 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                                        title="Editar fecha"
+                                      >
+                                        <Edit2 size={12} />
+                                      </button>
+                                      <button 
+                                        onClick={() => handleDeleteRecord(printer.id, record.id)}
+                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                        title="Eliminar registro"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             <p className="text-[10px] text-slate-500 font-medium italic leading-relaxed">{record.notes}</p>
                           </div>
