@@ -40,12 +40,14 @@ export interface FirestoreErrorInfo {
 export const handleFirestoreError = (error: any, operationType: FirestoreErrorInfo['operationType'], path: string | null = null) => {
   if (error?.code === 'permission-denied') {
     const user = auth.currentUser;
+    // If there is no user yet, we might be in the middle of a sign-in transition
+    // We throw a more informative error for our components to handle
     const errorInfo: FirestoreErrorInfo = {
       error: error.message,
       operationType,
       path,
       authInfo: {
-        userId: user?.uid || 'anonymous',
+        userId: user?.uid || 'no-session',
         email: user?.email || '',
         emailVerified: !!user?.emailVerified,
         isAnonymous: !!user?.isAnonymous,

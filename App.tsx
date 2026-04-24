@@ -38,14 +38,14 @@ import {
   initializeDatabase
 } from './services/firebaseService';
 import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
-import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Loader2, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 import { useAuth } from './lib/AuthContext';
 import Login from './components/Login';
 import { testFirestoreConnection } from './lib/firebase';
 
 const App: React.FC = () => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
   const [stock, setStock] = useState<StockItem[]>([]);
@@ -61,42 +61,69 @@ const App: React.FC = () => {
   const [hotendStock, setHotendStock] = useState<number>(0);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSynced, setIsSynced] = useState(false);
+  const [hasPermissionError, setHasPermissionError] = useState(false);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
 
+    setHasPermissionError(false);
     // Verify connection once authenticated
     testFirestoreConnection();
     
     // Run initialization once per admin session if needed
-    initializeDatabase().catch(err => console.error("Auto-init failed:", err));
+    initializeDatabase().catch(err => {
+      // Ignore permission-denied during auth transition
+      if (err instanceof Error && err.message.includes('permission-denied')) {
+        setHasPermissionError(true);
+      } else if (err instanceof Error) {
+        console.error("Auto-init failed:", err);
+      }
+    });
+
+    const handleError = (err: any) => {
+      if (err?.code === 'permission-denied' || (err instanceof Error && err.message.includes('permission-denied'))) {
+        setHasPermissionError(true);
+      }
+      setIsLoadingData(false);
+    };
+
+    const timer = setTimeout(() => {
+      if (isLoadingData) {
+        console.warn("Data sync timed out, forcing load state to false");
+        setIsLoadingData(false);
+      }
+    }, 8000); // 8 seconds timeout
 
     const unsubStock = subscribeToStock((newStock) => {
       setStock(newStock);
       setIsLoadingData(false);
+      clearTimeout(timer);
       setIsSynced(true);
       setTimeout(() => setIsSynced(false), 2000);
+    }, (err) => {
+      clearTimeout(timer);
+      handleError(err);
     });
 
     const unsubPrinters = subscribeToPrinters((newPrinters) => {
       setPrinters(newPrinters);
-    });
+    }, handleError);
 
     const unsubCustomers = subscribeToCustomers((newCustomers) => {
       setCustomers(newCustomers);
-    });
+    }, handleError);
 
     const unsubSuppliers = subscribeToSuppliers((newSuppliers) => {
       setSuppliers(newSuppliers);
-    });
+    }, handleError);
 
     const unsubExpenses = subscribeToExpenses((newExpenses) => {
       setExpenses(newExpenses);
-    });
+    }, handleError);
 
     const unsubRemitos = subscribeToRemitos((newRemitos) => {
       setRemitos(newRemitos);
-    });
+    }, handleError);
 
     const unsubSettings = subscribeToSettings((settings) => {
       if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
@@ -104,7 +131,7 @@ const App: React.FC = () => {
       if (settings?.designPrice) setDesignPrice(settings.designPrice);
       if (settings?.postProcessPrice) setPostProcessPrice(settings.postProcessPrice);
       if (settings?.hotendStock !== undefined) setHotendStock(settings.hotendStock);
-    });
+    }, handleError);
 
     return () => {
       unsubStock();
@@ -212,6 +239,32 @@ const App: React.FC = () => {
 
   if (!user || !isAdmin) {
     return <Login />;
+  }
+
+  if (hasPermissionError) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-950 p-6 text-center">
+        <div className="max-w-md space-y-8">
+          <div className="w-20 h-20 bg-red-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-red-600/20">
+            <ShieldAlert className="text-white" size={40} />
+          </div>
+          <div className="space-y-4">
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">Fallo de Autenticación en la Nube</h2>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              El servidor de base de datos ha denegado el acceso de lectura/escritura. 
+              <br /><br />
+              Si estás usando el <strong>ingreso con usuario y contraseña</strong>, asegúrate de que el método <strong>"Anonymous Auth"</strong> esté habilitado en la Consola de Firebase.
+            </p>
+          </div>
+          <button 
+            onClick={logout}
+            className="w-full py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-orange-600 hover:text-white transition-all shadow-xl active:scale-95"
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (isLoadingData) {

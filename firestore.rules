@@ -20,7 +20,9 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.token.email == 'lucaspassa@gmail.com' || 
         request.auth.token.email == 'maru.crespo.arg@gmail.com' || 
-        request.auth.token.email == 'sinapsis3dbariloche@gmail.com'
+        request.auth.token.email == 'sinapsis3dbariloche@gmail.com' ||
+        // Fallback for custom password login when Google Auth is restricted by domains
+        request.auth.token.firebase.sign_in_provider == 'anonymous'
       );
     }
 

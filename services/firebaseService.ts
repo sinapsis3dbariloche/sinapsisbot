@@ -4,17 +4,25 @@ import { db, handleFirestoreError } from '../lib/firebase';
 import { StockItem, Printer, Customer, Remito, Supplier, Expense } from '../types';
 import { INITIAL_STOCK, INITIAL_PRINTERS, INITIAL_CUSTOMERS, INITIAL_REMITOS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE, DEFAULT_HOTEND_STOCK } from '../constants';
 
-export const subscribeToStock = (callback: (stock: StockItem[]) => void) => {
+export const subscribeToStock = (callback: (stock: StockItem[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'stock'), {
     next: (snapshot) => {
       const stock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockItem));
       callback(stock);
     },
-    error: (error) => handleFirestoreError(error, 'list', 'stock')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'stock');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
-export const subscribeToPrinters = (callback: (printers: Printer[]) => void) => {
+export const subscribeToPrinters = (callback: (printers: Printer[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'printers'), {
     next: (snapshot) => {
       if (snapshot.empty) {
@@ -24,53 +32,93 @@ export const subscribeToPrinters = (callback: (printers: Printer[]) => void) => 
       const printers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Printer));
       callback(printers);
     },
-    error: (error) => handleFirestoreError(error, 'list', 'printers')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'printers');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
-export const subscribeToCustomers = (callback: (customers: Customer[]) => void) => {
+export const subscribeToCustomers = (callback: (customers: Customer[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'customers'), {
     next: (snapshot) => {
       if (snapshot.empty) return;
       const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
       callback(customers.sort((a, b) => a.name.localeCompare(b.name)));
     },
-    error: (error) => handleFirestoreError(error, 'list', 'customers')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'customers');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
-export const subscribeToSuppliers = (callback: (suppliers: Supplier[]) => void) => {
+export const subscribeToSuppliers = (callback: (suppliers: Supplier[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'suppliers'), {
     next: (snapshot) => {
       const suppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
       callback(suppliers.sort((a, b) => a.name.localeCompare(b.name)));
     },
-    error: (error) => handleFirestoreError(error, 'list', 'suppliers')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'suppliers');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
-export const subscribeToRemitos = (callback: (remitos: Remito[]) => void) => {
+export const subscribeToRemitos = (callback: (remitos: Remito[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'remitos'), {
     next: (snapshot) => {
       if (snapshot.empty) return;
       const remitos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Remito));
       callback(remitos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     },
-    error: (error) => handleFirestoreError(error, 'list', 'remitos')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'remitos');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
-export const subscribeToExpenses = (callback: (expenses: Expense[]) => void) => {
+export const subscribeToExpenses = (callback: (expenses: Expense[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'expenses'), {
     next: (snapshot) => {
       const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
       callback(expenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     },
-    error: (error) => handleFirestoreError(error, 'list', 'expenses')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'expenses');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
-export const subscribeToSettings = (callback: (settings: any) => void) => {
+export const subscribeToSettings = (callback: (settings: any) => void, onError?: (error: any) => void) => {
   const settingsRef = doc(db, 'config', 'settings');
   return onSnapshot(settingsRef, {
     next: (snapshot) => {
@@ -86,7 +134,15 @@ export const subscribeToSettings = (callback: (settings: any) => void) => {
         });
       }
     },
-    error: (error) => handleFirestoreError(error, 'get', 'config/settings')
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'get', 'config/settings');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
   });
 };
 
