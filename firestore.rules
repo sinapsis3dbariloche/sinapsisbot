@@ -60,7 +60,8 @@ service cloud.firestore {
              data.status in ['Pendiente', 'Parcial', 'Pagado'] &&
              data.amountPaid is number &&
              data.items is list &&
-             data.createdAt is string;
+             data.createdAt is string &&
+             (!('isDraft' in data) || data.isDraft is bool);
     }
 
     function isValidPrinter(data) {
@@ -90,7 +91,8 @@ service cloud.firestore {
              data.supplierName is string &&
              data.items is list &&
              data.total is number &&
-             data.createdAt is string;
+             data.createdAt is string &&
+             (!('isDraft' in data) || data.isDraft is bool);
     }
 
     // --- Collection Routes ---

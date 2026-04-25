@@ -24,6 +24,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCustomer, setFilterCustomer] = useState(initialCustomerId || '');
   const [filterOnlyUnpaid, setFilterOnlyUnpaid] = useState(false);
+  const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
 
   useEffect(() => {
     if (initialCustomerId !== undefined) {
@@ -32,6 +33,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
   }, [initialCustomerId]);
   const [isAdding, setIsAdding] = useState(false);
   const [selectedRemito, setSelectedRemito] = useState<Remito | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   
   // New Remito Form State
   const [newRemito, setNewRemito] = useState<Partial<Remito>>({
@@ -54,8 +56,9 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                           (r.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCustomer = filterCustomer === '' || r.customerId === filterCustomer;
     const matchesStatus = !filterOnlyUnpaid || r.status !== 'Pagado';
+    const matchesDraft = filterIncludeDrafts || !r.isDraft;
     
-    return matchesSearch && matchesCustomer && matchesStatus;
+    return matchesSearch && matchesCustomer && matchesStatus && matchesDraft;
   });
 
   const calculateTotal = (items: RemitoItem[]) => {
@@ -99,6 +102,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
       items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
       total: 0,
       status: 'Pendiente',
+      isDraft: false,
       amountPaid: 0,
       paymentHistory: [],
       notes: '',
@@ -112,16 +116,11 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     setIsAdding(true);
   };
 
-  const handleSave = () => {
+  const handleSave = (asDraft = false) => {
     if (!newRemito.customerId) return alert('Selecciona un cliente');
     if (!newRemito.items?.length || !newRemito.items[0].description) return alert('Agrega al menos un item');
     
-    const isExisting = remitos.some(r => r.id === newRemito.id);
-    if (isExisting) {
-      if (!confirm('¿Estás seguro de que deseas guardar los cambios en este remito?')) return;
-    }
-
-    onUpdate(newRemito as Remito);
+    onUpdate({ ...newRemito, isDraft: asDraft } as Remito);
     setIsAdding(false);
   };
 
@@ -281,6 +280,16 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               />
               <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No Pagados</span>
             </label>
+
+            <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
+              <input 
+                type="checkbox"
+                checked={filterIncludeDrafts}
+                onChange={(e) => setFilterIncludeDrafts(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+              />
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Ver Borradores</span>
+            </label>
           </div>
 
           <button 
@@ -340,39 +349,41 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               </button>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {newRemito.items?.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-slate-50 p-4 rounded-2xl">
-                  <div className="col-span-12 md:col-span-6 space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase">Descripción</label>
+                <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                  <div className="col-span-12 md:col-span-6">
                     <input 
                       type="text"
                       value={item.description}
                       onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                      placeholder="Ej: Llaveros personalizados"
-                      className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-bold"
+                      placeholder="Descripción del item..."
+                      className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
-                  <div className="col-span-4 md:col-span-2 space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase text-center block">Cant.</label>
+                  <div className="col-span-4 md:col-span-2">
                     <input 
                       type="number"
-                      value={item.quantity}
+                      placeholder="Cantidad"
+                      value={item.quantity || ''}
                       onChange={(e) => handleItemChange(idx, 'quantity', Number(e.target.value))}
-                      className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-bold text-center"
+                      className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-bold text-center focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
-                  <div className="col-span-5 md:col-span-2 space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase text-right block">Precio Unit.</label>
+                  <div className="col-span-5 md:col-span-2">
                     <input 
                       type="number"
-                      value={item.unitPrice}
+                      placeholder="P. Unit"
+                      value={item.unitPrice || ''}
                       onChange={(e) => handleItemChange(idx, 'unitPrice', Number(e.target.value))}
-                      className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-bold text-right"
+                      className="w-full bg-white border-none rounded-lg px-3 py-2 text-xs font-bold text-right focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
-                  <div className="col-span-3 md:col-span-2 flex justify-center pb-1">
-                    <button onClick={() => handleRemoveItem(idx)} className="text-red-400 hover:text-red-600"><Trash size={16} /></button>
+                  <div className="col-span-3 md:col-span-2 flex justify-end items-center pr-1">
+                    <span className="font-black text-[10px] text-slate-900 mr-2 flex-1 text-right whitespace-nowrap">${(item.quantity * item.unitPrice).toLocaleString()}</span>
+                    <button onClick={() => handleRemoveItem(idx)} className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors">
+                      <Trash size={14} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -393,34 +404,42 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 Cancelar
               </button>
               <button 
-                onClick={handleSave}
-                className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
+                onClick={() => handleSave(true)}
+                className="flex-[1.5] flex items-center justify-center gap-2 bg-slate-100 text-slate-600 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
               >
-                <Save size={16} /> Guardar Venta
+                <Save size={16} /> Borrador
+              </button>
+              <button 
+                onClick={() => handleSave(false)}
+                className="flex-2 flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
+              >
+                <CheckCircle size={16} /> Emitir Venta
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="space-y-3">
-        {filteredRemitos.map(remito => (
-          <RemitoRow 
-            key={remito.id}
-            remito={remito}
-            onGeneratePDF={generatePDF}
-            onRegisterPayment={setSelectedRemito}
-            onEdit={handleEditRemito}
-            onDelete={onDelete}
-          />
-        ))}
+      {!isAdding && (
+        <div className="space-y-3">
+          {filteredRemitos.map(remito => (
+            <RemitoRow 
+              key={remito.id}
+              remito={remito}
+              onGeneratePDF={generatePDF}
+              onRegisterPayment={setSelectedRemito}
+              onEdit={handleEditRemito}
+              onDelete={setItemToDelete}
+            />
+          ))}
 
-        {filteredRemitos.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No se encontraron ventas</p>
-          </div>
-        )}
-      </div>
+          {filteredRemitos.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No se encontraron ventas</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payment Modal */}
       {selectedRemito && (
@@ -507,6 +526,36 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">¿Eliminar venta?</h3>
+            <p className="text-sm font-bold text-slate-500">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3 pt-4">
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  onDelete(itemToDelete);
+                  setItemToDelete(null);
+                }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-700 shadow-xl shadow-red-600/20 transition-all"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -545,13 +594,19 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
 
         {/* Status */}
         <div className="col-span-2 md:text-center">
-          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
-            remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
-            remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
-            'bg-orange-100 text-orange-700'
-          }`}>
-            {remito.status}
-          </span>
+          {remito.isDraft ? (
+            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block bg-slate-100 text-slate-600 border border-slate-200">
+              Borrador
+            </span>
+          ) : (
+            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+              remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
+              remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
+              'bg-orange-100 text-orange-700'
+            }`}>
+              {remito.status}
+            </span>
+          )}
         </div>
 
         {/* Total */}
@@ -570,20 +625,24 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
           >
             <List size={16} />
           </button>
-          <button 
-            onClick={() => onGeneratePDF(remito)}
-            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all"
-            title="Descargar Remito"
-          >
-            <Download size={16} />
-          </button>
-          <button 
-            onClick={() => onRegisterPayment(remito)}
-            className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all"
-            title="Registrar Pago"
-          >
-            <DollarSign size={16} />
-          </button>
+          {!remito.isDraft && (
+            <>
+              <button 
+                onClick={() => onGeneratePDF(remito)}
+                className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all"
+                title="Descargar Remito"
+              >
+                <Download size={16} />
+              </button>
+              <button 
+                onClick={() => onRegisterPayment(remito)}
+                className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all"
+                title="Registrar Pago"
+              >
+                <DollarSign size={16} />
+              </button>
+            </>
+          )}
           <button 
             onClick={() => onEdit(remito)}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
@@ -592,7 +651,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
             <Pencil size={16} />
           </button>
           <button 
-            onClick={() => {if(confirm('¿Eliminar venta?')) onDelete(remito.id)}}
+            onClick={() => onDelete(remito.id)}
             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
           >
             <Trash2 size={16} />

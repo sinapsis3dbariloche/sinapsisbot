@@ -12,8 +12,10 @@ interface ExpenseManagerProps {
 
 const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Expense>>({
     id: '',
     date: new Date().toISOString().split('T')[0],
@@ -25,10 +27,12 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     createdAt: ''
   });
 
-  const filteredExpenses = expenses.filter(e => 
-    e.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.items.some(item => item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredExpenses = expenses.filter(e => {
+    const matchesSearch = e.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.items.some(item => item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesDraft = filterIncludeDrafts || !e.isDraft;
+    return matchesSearch && matchesDraft;
+  });
 
   const handleAddNew = () => {
     setFormData({
@@ -39,7 +43,8 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
       items: [],
       total: 0,
       notes: '',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isDraft: false
     });
     setIsAdding(true);
     setEditingId(null);
@@ -84,7 +89,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     setFormData({ ...formData, items: updatedItems, total: newTotal });
   };
 
-  const handleSave = () => {
+  const handleSave = (asDraft = false) => {
     if (!formData.supplierId) return alert('Seleccione un proveedor');
     if (!formData.items || formData.items.length === 0) return alert('Agregue al menos un ítem de gasto');
     
@@ -92,7 +97,8 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     const finalData: Expense = {
       ...formData as Expense,
       supplierName: supplier?.name || '',
-      date: new Date(formData.date!).toISOString()
+      date: new Date(formData.date!).toISOString(),
+      isDraft: asDraft
     };
 
     onUpdate(finalData);
@@ -125,6 +131,17 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
               className="w-full sm:w-64 bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-red-600"
             />
           </div>
+
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
+            <input 
+              type="checkbox"
+              checked={filterIncludeDrafts}
+              onChange={(e) => setFilterIncludeDrafts(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+            />
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Ver Borradores</span>
+          </label>
+
           <button 
             onClick={handleAddNew}
             className="flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
@@ -252,12 +269,18 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
           <div className="flex justify-end gap-3 pt-4">
             <button 
               onClick={() => {setIsAdding(false); setEditingId(null);}}
-              className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
+              className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all border border-slate-100"
             >
               Cancelar
             </button>
             <button 
-              onClick={handleSave}
+              onClick={() => handleSave(true)}
+              className="flex items-center gap-2 bg-slate-100 text-slate-600 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
+            >
+              <Save size={16} /> Borrador
+            </button>
+            <button 
+              onClick={() => handleSave(false)}
               className="flex items-center gap-2 bg-red-600 text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
             >
               <Save size={16} /> {editingId ? 'Actualizar Gasto' : 'Registrar Gasto'}
@@ -267,23 +290,55 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
       )}
 
       {/* Expenses List */}
-      <div className="space-y-2">
-        {filteredExpenses.map(expense => (
-          <ExpenseRow 
-            key={expense.id} 
-            expense={expense} 
-            onEdit={handleEdit} 
-            onDelete={onDelete} 
-          />
-        ))}
+      {!isAdding && (
+        <div className="space-y-2">
+          {filteredExpenses.map(expense => (
+            <ExpenseRow 
+              key={expense.id} 
+              expense={expense} 
+              onEdit={handleEdit} 
+              onDelete={setItemToDelete} 
+            />
+          ))}
 
-        {filteredExpenses.length === 0 && (
-          <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
-            <DollarSign size={48} className="mx-auto text-slate-200 mb-4" />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No hay gastos registrados</p>
+          {filteredExpenses.length === 0 && (
+            <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
+              <DollarSign size={48} className="mx-auto text-slate-200 mb-4" />
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No hay gastos registrados</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">¿Eliminar gasto?</h3>
+            <p className="text-sm font-bold text-slate-500">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3 pt-4">
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  onDelete(itemToDelete);
+                  setItemToDelete(null);
+                }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-700 shadow-xl shadow-red-600/20 transition-all"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -305,7 +360,14 @@ const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, onEdit, onDelete }) =>
             {new Date(expense.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-black text-slate-900 uppercase text-xs truncate">{expense.supplierName}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-slate-900 uppercase text-xs truncate">{expense.supplierName}</h3>
+              {expense.isDraft && (
+                <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 border border-slate-200">
+                  Borrador
+                </span>
+              )}
+            </div>
             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{expense.items.length} ítems registrados</p>
           </div>
         </div>
@@ -330,7 +392,7 @@ const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, onEdit, onDelete }) =>
               <Edit2 size={14} />
             </button>
             <button 
-              onClick={() => {if(confirm('¿Eliminar gasto?')) onDelete(expense.id)}} 
+              onClick={() => onDelete(expense.id)} 
               className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
             >
               <Trash2 size={14} />

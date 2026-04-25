@@ -13,6 +13,7 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Supplier>>({});
 
   const filteredSuppliers = suppliers.filter(s => 
@@ -246,7 +247,7 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => handleEdit(supplier)} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg"><Edit2 size={14} /></button>
-                <button onClick={() => {if(confirm('¿Eliminar proveedor?')) onDelete(supplier.id)}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
+                <button onClick={() => setItemToDelete(supplier.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
               </div>
             </div>
 
@@ -339,6 +340,36 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">¿Eliminar proveedor?</h3>
+            <p className="text-sm font-bold text-slate-500">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3 pt-4">
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  onDelete(itemToDelete);
+                  setItemToDelete(null);
+                }}
+                className="flex-1 bg-red-600 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-700 shadow-xl shadow-red-600/20 transition-all"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

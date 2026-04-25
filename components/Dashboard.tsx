@@ -53,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses }) => {
   const stats = useMemo(() => {
     let totalPending = 0;
     let totalCollected = 0;
-    let totalExpenses = expenses.reduce((acc, curr) => acc + (curr.total || 0), 0);
+    let totalExpenses = expenses.filter(e => !e.isDraft).reduce((acc, curr) => acc + (curr.total || 0), 0);
     
     const monthlyIncome: Record<string, number> = {};
     const monthlyExpenses: Record<string, number> = {};
@@ -71,7 +71,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses }) => {
       monthlyExpenses[m] = 0;
     });
 
-    remitos.forEach(r => {
+    remitos.filter(r => !r.isDraft).forEach(r => {
       if (!customerBalances[r.customerId]) {
         customerBalances[r.customerId] = { name: r.customerName, paid: 0, debt: 0 };
       }
@@ -100,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses }) => {
       }
     });
 
-    expenses.forEach(e => {
+    expenses.filter(e => !e.isDraft).forEach(e => {
       if (!supplierExpenses[e.supplierId]) {
         supplierExpenses[e.supplierId] = { name: e.supplierName, total: 0 };
       }

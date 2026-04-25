@@ -54,6 +54,7 @@ export interface Remito {
   paymentHistory?: PaymentRecord[];
   notes?: string;
   createdAt: string;
+  isDraft?: boolean;
 }
 
 export interface Customer {
@@ -104,6 +105,7 @@ export interface Expense {
   total: number;
   notes?: string;
   createdAt: string;
+  isDraft?: boolean;
 }
 
 // Interface for chat history messages used by SinapsisBot
