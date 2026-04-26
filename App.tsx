@@ -11,7 +11,8 @@ import RemitosManager from './components/RemitosManager';
 import SupplierManager from './components/SupplierManager';
 import ExpenseManager from './components/ExpenseManager';
 import Dashboard from './components/Dashboard';
-import { StockItem, Printer, Customer, Remito, Supplier, Expense } from './types';
+import PricesManager from './components/PricesManager';
+import { StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from './types';
 import { 
   subscribeToStock, 
   subscribeToSettings, 
@@ -20,6 +21,7 @@ import {
   subscribeToSuppliers,
   subscribeToExpenses,
   subscribeToRemitos,
+  subscribeToPrices,
   updateStockItemInDb, 
   updateSettings, 
   resetAllStockInDb, 
@@ -34,6 +36,8 @@ import {
   deleteExpenseFromDb,
   updateRemitoInDb,
   deleteRemitoFromDb,
+  updatePriceInDb,
+  deletePriceFromDb,
   getNextRemitoNumber,
   initializeDatabase
 } from './services/firebaseService';
@@ -54,6 +58,7 @@ const App: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [remitos, setRemitos] = useState<Remito[]>([]);
+  const [prices, setPrices] = useState<PriceItem[]>([]);
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
   const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
@@ -121,6 +126,10 @@ const App: React.FC = () => {
       setExpenses(newExpenses);
     }, handleError);
 
+    const unsubPrices = subscribeToPrices((newPrices) => {
+      setPrices(newPrices);
+    }, handleError);
+
     const unsubRemitos = subscribeToRemitos((newRemitos) => {
       setRemitos(newRemitos);
     }, handleError);
@@ -139,6 +148,7 @@ const App: React.FC = () => {
       unsubCustomers();
       unsubSuppliers();
       unsubExpenses();
+      unsubPrices();
       unsubRemitos();
       unsubSettings();
     };
@@ -193,6 +203,14 @@ const App: React.FC = () => {
 
   const handleDeleteExpense = async (id: string) => {
     await deleteExpenseFromDb(id);
+  };
+
+  const handleUpdatePrice = async (price: PriceItem) => {
+    await updatePriceInDb(price);
+  };
+
+  const handleDeletePrice = async (id: string) => {
+    await deletePriceFromDb(id);
   };
 
   const handleUpdateRemito = async (remito: Remito) => {
@@ -375,6 +393,14 @@ const App: React.FC = () => {
             suppliers={suppliers}
             onUpdate={handleUpdateExpense}
             onDelete={handleDeleteExpense}
+          />
+        )}
+
+        {activeTab === 'prices' && (
+          <PricesManager 
+            prices={prices}
+            onUpdate={handleUpdatePrice}
+            onDelete={handleDeletePrice}
           />
         )}
 

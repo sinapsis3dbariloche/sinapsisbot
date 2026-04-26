@@ -95,7 +95,26 @@ service cloud.firestore {
              (!('isDraft' in data) || data.isDraft is bool);
     }
 
+    function isValidPriceItem(data) {
+      return data.keys().hasAll(['id', 'description', 'wholesalePrice', 'retailPrice', 'wholesaleMinQuantity', 'createdAt']) &&
+             data.id is string &&
+             data.description is string &&
+             data.description.size() <= 200 &&
+             data.wholesalePrice is number &&
+             data.retailPrice is number &&
+             data.wholesaleMinQuantity is number &&
+             data.createdAt is string &&
+             (!('history' in data) || data.history is list);
+    }
+
     // --- Collection Routes ---
+
+    match /prices/{priceId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(priceId) && isValidPriceItem(request.resource.data);
+      allow update: if isAdmin() && isValidPriceItem(request.resource.data);
+      allow delete: if isAdmin();
+    }
 
     match /stock/{itemId} {
       allow read: if isAdmin();

@@ -1,8 +1,44 @@
 
 import { collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../lib/firebase';
-import { StockItem, Printer, Customer, Remito, Supplier, Expense } from '../types';
+import { StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from '../types';
 import { INITIAL_STOCK, INITIAL_PRINTERS, INITIAL_CUSTOMERS, INITIAL_REMITOS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE, DEFAULT_HOTEND_STOCK } from '../constants';
+
+export const subscribeToPrices = (callback: (prices: PriceItem[]) => void, onError?: (error: any) => void) => {
+  return onSnapshot(collection(db, 'prices'), {
+    next: (snapshot) => {
+      const prices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PriceItem));
+      callback(prices.sort((a, b) => a.description.localeCompare(b.description)));
+    },
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'prices');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
+  });
+};
+
+export const updatePriceInDb = async (price: PriceItem) => {
+  const docRef = doc(db, 'prices', price.id);
+  try {
+    await setDoc(docRef, price, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, 'write', `prices/${price.id}`);
+  }
+};
+
+export const deletePriceFromDb = async (id: string) => {
+  const docRef = doc(db, 'prices', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, 'delete', `prices/${id}`);
+  }
+};
 
 export const subscribeToStock = (callback: (stock: StockItem[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'stock'), {

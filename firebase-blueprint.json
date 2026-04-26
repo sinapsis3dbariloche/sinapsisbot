@@ -121,6 +121,35 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "date", "supplierId", "total", "createdAt"]
+    },
+    "PriceHistoryEntry": {
+      "title": "Price History Entry",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "oldWholesalePrice": { "type": "number" },
+        "newWholesalePrice": { "type": "number" },
+        "oldRetailPrice": { "type": "number" },
+        "newRetailPrice": { "type": "number" }
+      },
+      "required": ["date", "oldWholesalePrice", "newWholesalePrice", "oldRetailPrice", "newRetailPrice"]
+    },
+    "PriceItem": {
+      "title": "Price Item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "wholesalePrice": { "type": "number" },
+        "retailPrice": { "type": "number" },
+        "wholesaleMinQuantity": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "#/entities/PriceHistoryEntry" }
+        }
+      },
+      "required": ["id", "description", "wholesalePrice", "retailPrice", "wholesaleMinQuantity", "createdAt"]
     }
   },
   "firestore": {
@@ -130,6 +159,7 @@
     "/customers": { "schema": "Customer", "description": "Customer database" },
     "/suppliers": { "schema": "Supplier", "description": "Supplier database" },
     "/expenses": { "schema": "Expense", "description": "Business expenses" },
+    "/prices": { "schema": "PriceItem", "description": "Price list" },
     "/authorized_users": { "schema": "AuthorizedUser", "description": "System access control" },
     "/config/settings": { "schema": "Settings", "description": "Global prices and configurations" }
   }

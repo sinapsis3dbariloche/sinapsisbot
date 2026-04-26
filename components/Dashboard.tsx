@@ -139,7 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses }) => {
       totalPending,
       totalCollected,
       totalExpenses,
-      balance: totalExpenses - totalCollected,
+      balance: totalCollected - totalExpenses,
       chartData,
       topPayers,
       topDebtors,
@@ -152,7 +152,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses }) => {
       style: 'currency',
       currency: 'ARS',
       minimumFractionDigits: 0
-    }).format(Math.max(0, value));
+    }).format(value);
   };
 
   return (
@@ -215,7 +215,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses }) => {
               <Wallet size={20} />
             </div>
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Balance Neto</span>
-            <h3 className={`text-2xl font-black tracking-tight ${stats.balance <= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+            <h3 className={`text-2xl font-black tracking-tight ${stats.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {formatCurrency(stats.balance)}
             </h3>
             <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-slate-400">

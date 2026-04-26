@@ -108,6 +108,24 @@ export interface Expense {
   isDraft?: boolean;
 }
 
+export interface PriceHistoryEntry {
+  date: string;
+  oldWholesalePrice: number;
+  newWholesalePrice: number;
+  oldRetailPrice: number;
+  newRetailPrice: number;
+}
+
+export interface PriceItem {
+  id: string;
+  description: string;
+  wholesalePrice: number;
+  retailPrice: number;
+  wholesaleMinQuantity: number;
+  createdAt: string;
+  history?: PriceHistoryEntry[];
+}
+
 // Interface for chat history messages used by SinapsisBot
 export interface ChatMessage {
   role: 'user' | 'model';

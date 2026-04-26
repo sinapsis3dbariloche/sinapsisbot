@@ -1,5 +1,5 @@
 
-import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign } from 'lucide-react';
+import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 
@@ -16,9 +16,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'remitos', label: 'Ventas', icon: FileText },
+    { id: 'prices', label: 'Precios', icon: Tag, isSubItem: true },
+    { id: 'customers', label: 'Clientes', icon: Users, isSubItem: true },
     { id: 'expenses', label: 'Gastos', icon: DollarSign },
-    { id: 'customers', label: 'Clientes', icon: Users },
-    { id: 'suppliers', label: 'Proveedores', icon: Briefcase },
+    { id: 'suppliers', label: 'Proveedores', icon: Briefcase, isSubItem: true },
     { id: 'calc', label: 'Calculadora', icon: Calculator },
     { id: 'stock', label: 'Stock', icon: Package },
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
