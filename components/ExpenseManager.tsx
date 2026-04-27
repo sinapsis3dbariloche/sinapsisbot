@@ -1,8 +1,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Supplier, Expense, ExpenseItem } from '../types';
-import { Search, Plus, Trash2, Edit2, Save, X, Calendar, User, FileText, DollarSign, List, ChevronRight } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Save, X, Calendar, User, FileText, DollarSign, List, ChevronRight, History } from 'lucide-react';
 import Pagination from './Pagination';
+import { useAuth } from '../lib/AuthContext';
 
 interface ExpenseManagerProps {
   expenses: Expense[];
@@ -12,12 +13,16 @@ interface ExpenseManagerProps {
 }
 
 const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete }) => {
+  const { user } = useAuth();
+  const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedItemForHistory, setSelectedItemForHistory] = useState<Expense | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -119,11 +124,24 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     if (!formData.items || formData.items.length === 0) return alert('Agregue al menos un ítem de gasto');
     
     const supplier = suppliers.find(s => s.id === formData.supplierId);
+    
+    let actionLabel = editingId ? 'Edición de Gasto' : 'Creación de Gasto';
+    let changesLabel = asDraft ? 'Guardado como borrador.' : 'Guardado regular.';
+
+    const historyEntry = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      user: userName,
+      action: actionLabel,
+      changes: changesLabel
+    };
+
     const finalData: Expense = {
       ...formData as Expense,
       supplierName: supplier?.name || '',
       date: new Date(formData.date!).toISOString(),
-      isDraft: asDraft
+      isDraft: asDraft,
+      history: [...((formData as Expense).history || []), historyEntry]
     };
 
     onUpdate(finalData);
@@ -359,6 +377,10 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
               expense={expense} 
               onEdit={handleEdit} 
               onDelete={setItemToDelete} 
+              onShowHistory={(expense) => {
+                setSelectedItemForHistory(expense);
+                setShowHistoryModal(true);
+              }}
             />
           ))}
 
@@ -381,6 +403,52 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
           )}
         </div>
       )}
+
+      {/* History Modal */}
+      {showHistoryModal && selectedItemForHistory && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  <History size={16} />
+                 </div>
+                 <h3 className="font-bold text-slate-800">Historial de modif.</h3>
+               </div>
+               <button 
+                 onClick={() => {
+                   setShowHistoryModal(false);
+                   setSelectedItemForHistory(null);
+                 }}
+                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+               >
+                 <X size={20} />
+               </button>
+             </div>
+             <div className="p-4 overflow-y-auto">
+                {selectedItemForHistory.history && selectedItemForHistory.history.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedItemForHistory.history.map(entry => (
+                      <div key={entry.id} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-xs font-bold text-slate-500">{new Date(entry.date).toLocaleString()}</span>
+                          <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{entry.user}</span>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-800 mb-1">{entry.action}</p>
+                        <p className="text-xs text-slate-600 whitespace-pre-wrap">{entry.changes}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                     <History size={32} className="mx-auto mb-2 opacity-50" />
+                     <p>No hay historial de modificaciones</p>
+                  </div>
+                )}
+             </div>
+           </div>
+         </div>
+       )}
 
       {/* Delete Confirmation Modal */}
       {itemToDelete && (
@@ -419,9 +487,10 @@ interface ExpenseRowProps {
   expense: Expense;
   onEdit: (expense: Expense) => void;
   onDelete: (id: string) => void;
+  onShowHistory: (expense: Expense) => void;
 }
 
-const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, onEdit, onDelete }) => {
+const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, onEdit, onDelete, onShowHistory }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -462,6 +531,13 @@ const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, onEdit, onDelete }) =>
               className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
             >
               <Edit2 size={14} />
+            </button>
+            <button 
+              onClick={() => onShowHistory(expense)} 
+              className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+              title="Ver Historial"
+            >
+              <History size={14} />
             </button>
             <button 
               onClick={() => onDelete(expense.id)} 

@@ -29,6 +29,14 @@ export interface Printer {
   history: MaintenanceRecord[];
 }
 
+export interface ChangeHistoryEntry {
+  id: string;
+  date: string;
+  user: string;
+  action: string;
+  changes: string;
+}
+
 export interface RemitoItem {
   description: string;
   quantity: number;
@@ -57,6 +65,7 @@ export interface Remito {
   notes?: string;
   createdAt: string;
   isDraft?: boolean;
+  history?: ChangeHistoryEntry[];
 }
 
 export interface QuoteItem {
@@ -80,6 +89,7 @@ export interface Quote {
   notes?: string;
   createdAt: string;
   isDraft?: boolean; // Kept for backwards compatibility
+  history?: ChangeHistoryEntry[];
 }
 
 export interface Customer {
@@ -131,6 +141,7 @@ export interface Expense {
   notes?: string;
   createdAt: string;
   isDraft?: boolean;
+  history?: ChangeHistoryEntry[];
 }
 
 export interface PriceHistoryEntry {

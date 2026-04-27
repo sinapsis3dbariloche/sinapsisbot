@@ -4,10 +4,11 @@ import { Remito, Customer, RemitoItem } from '../types';
 import { 
   FileText, Plus, Search, Trash2, Download, Send, CheckCircle, 
   Clock, X, Save, User, Calendar, Trash, MessageCircle, Mail,
-  DollarSign, ChevronRight, Pencil, List
+  DollarSign, ChevronRight, Pencil, List, History
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../lib/AuthContext';
 
 import CustomerAutocomplete from './CustomerAutocomplete';
 import CustomerFormModal from './CustomerFormModal';
@@ -28,11 +29,16 @@ interface RemitosManagerProps {
 const RemitosManager: React.FC<RemitosManagerProps> = ({ 
   remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, initialProductionStatusFilter, onCreateCustomer
 }) => {
+  const { user } = useAuth();
+  const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCustomer, setFilterCustomer] = useState(initialCustomerId || '');
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter || 'all');
   const [productionStatusFilter, setProductionStatusFilter] = useState(initialProductionStatusFilter || 'all');
   const [draftFilter, setDraftFilter] = useState('all');
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedItemForHistory, setSelectedItemForHistory] = useState<Remito | null>(null);
 
   useEffect(() => {
     if (initialCustomerId !== undefined) {
@@ -160,7 +166,17 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     if (!newRemito.customerId) return alert('Selecciona un cliente');
     if (!newRemito.items?.length || !newRemito.items[0].description) return alert('Agrega al menos un item');
     
-    onUpdate({ ...newRemito, isDraft: asDraft } as Remito);
+    const action = remitos.some(r => r.id === newRemito.id) ? 'Edición de Venta' : 'Creación de Venta';
+    const historyEntry = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      user: userName,
+      action,
+      changes: asDraft ? 'Guardado como borrador.' : 'Guardado regular.'
+    };
+    const updatedHistory = [...(newRemito.history || []), historyEntry];
+
+    onUpdate({ ...newRemito, isDraft: asDraft, history: updatedHistory } as Remito);
     setIsAdding(false);
   };
 
@@ -532,6 +548,10 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               onEdit={handleEditRemito}
               onDelete={setItemToDelete}
               onUpdate={onUpdate}
+              onShowHistory={(remito) => {
+                setSelectedItemForHistory(remito);
+                setShowHistoryModal(true);
+              }}
             />
           ))}
 
@@ -628,7 +648,16 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                   if (totalPaid >= selectedRemito.total) status = 'Pagado';
                   else if (totalPaid > 0) status = 'Parcial';
                   
-                  onUpdate({ ...selectedRemito, amountPaid: totalPaid, paymentHistory: newHistory, status });
+                  const historyEntry = {
+                    id: Date.now().toString(),
+                    date: new Date().toISOString(),
+                    user: userName,
+                    action: 'Pago Registrado',
+                    changes: `Se registró un pago de $${newPaymentAmount} con fecha ${newPaymentDate}. Estado: ${status}`
+                  };
+                  const newGlobalHistory = [...(selectedRemito.history || []), historyEntry];
+                  
+                  onUpdate({ ...selectedRemito, amountPaid: totalPaid, paymentHistory: newHistory, status, history: newGlobalHistory });
                   setSelectedRemito(null);
                 }}
                 className="flex-1 bg-slate-900 text-white py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-slate-900/20"
@@ -681,6 +710,52 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
           setIsCustomerModalOpen(false);
         }}
       />
+
+      {/* History Modal */}
+      {showHistoryModal && selectedItemForHistory && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  <History size={16} />
+                </div>
+                <h3 className="font-bold text-slate-800">Historial de modif.</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setSelectedItemForHistory(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+               {selectedItemForHistory.history && selectedItemForHistory.history.length > 0 ? (
+                 <div className="space-y-4">
+                   {selectedItemForHistory.history.map(entry => (
+                     <div key={entry.id} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                       <div className="flex justify-between items-start mb-2">
+                         <span className="text-xs font-bold text-slate-500">{new Date(entry.date).toLocaleString()}</span>
+                         <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{entry.user}</span>
+                       </div>
+                       <p className="text-sm font-semibold text-slate-800 mb-1">{entry.action}</p>
+                       <p className="text-xs text-slate-600 whitespace-pre-wrap">{entry.changes}</p>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="text-center py-8 text-slate-400">
+                    <History size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>No hay historial de modificaciones</p>
+                 </div>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -692,10 +767,13 @@ interface RemitoRowProps {
   onEdit: (remito: Remito) => void;
   onDelete: (id: string) => void;
   onUpdate: (remito: Remito) => void;
+  onShowHistory: (remito: Remito) => void;
 }
 
-const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegisterPayment, onEdit, onDelete, onUpdate }) => {
+const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegisterPayment, onEdit, onDelete, onUpdate, onShowHistory }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { user } = useAuth();
+  const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
 
   const handleNextProductionStatus = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -712,10 +790,20 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
     
     const newHistory = [...(remito.productionHistory || []), { status: nextStatus, date: new Date().toISOString() }];
     
+    const historyEntry = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      user: userName,
+      action: 'Estado de Producción',
+      changes: `Cambio a ${nextStatus}`
+    };
+    const newGlobalHistory = [...(remito.history || []), historyEntry];
+
     onUpdate({
       ...remito,
       productionStatus: nextStatus,
-      productionHistory: newHistory
+      productionHistory: newHistory,
+      history: newGlobalHistory
     });
   };
 
@@ -723,7 +811,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:border-orange-100 transition-all">
       <div className="p-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
         {/* Number & Date */}
-        <div className="col-span-2">
+        <div className="col-span-12 lg:col-span-2">
           <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest block w-fit mb-1">
             {remito.number}
           </span>
@@ -733,7 +821,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Customer */}
-        <div className="col-span-3">
+        <div className="col-span-12 lg:col-span-2">
           <h3 className="font-black text-slate-900 uppercase text-sm leading-tight truncate" title={remito.customerName}>
             {remito.customerName}
           </h3>
@@ -741,33 +829,32 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Status */}
-        <div className="col-span-2 md:text-center flex flex-col md:items-center gap-1">
+        <div className="col-span-12 lg:col-span-2 md:text-center flex flex-col md:items-center gap-1">
           {remito.isDraft ? (
             <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block bg-slate-100 text-slate-600 border border-slate-200">
               Borrador
             </span>
           ) : (
-            <>
-              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
-                remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
-                remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
-                'bg-orange-100 text-orange-700'
-              }`}>
-                {remito.status}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
-                (remito.productionStatus || 'Entregada') === 'En Producción' ? 'bg-purple-100 text-purple-700' :
-                (remito.productionStatus || 'Entregada') === 'Para entregar' ? 'bg-blue-100 text-blue-700' :
-                'bg-slate-800 text-white'
-              }`}>
-                {remito.productionStatus || 'Entregada'}
-              </span>
-            </>
+            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+              remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
+              remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
+              'bg-orange-100 text-orange-700'
+            }`}>
+              {remito.status}
+            </span>
           )}
+          
+          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+            (remito.productionStatus || 'Entregada') === 'En Producción' ? 'bg-purple-100 text-purple-700' :
+            (remito.productionStatus || 'Entregada') === 'Para entregar' ? 'bg-blue-100 text-blue-700' :
+            'bg-slate-800 text-white'
+          }`}>
+            {remito.productionStatus || 'Entregada'}
+          </span>
         </div>
 
         {/* Total */}
-        <div className="col-span-2 text-left md:text-right flex flex-col md:items-end">
+        <div className="col-span-12 md:col-span-6 lg:col-span-2 text-left md:text-right flex flex-col lg:items-end">
           <span className="text-lg font-black text-slate-900 tracking-tighter">
             $ {remito.total.toLocaleString('es-AR')}
           </span>
@@ -779,7 +866,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Actions */}
-        <div className="col-span-3 flex justify-end items-center gap-1.5">
+        <div className="col-span-12 md:col-span-6 lg:col-span-4 flex justify-end items-center gap-1 flex-wrap lg:flex-nowrap">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
@@ -824,8 +911,16 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
             <Pencil size={16} />
           </button>
           <button 
+            onClick={() => onShowHistory(remito)}
+            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+            title="Ver Historial"
+          >
+            <History size={16} />
+          </button>
+          <button 
             onClick={() => onDelete(remito.id)}
             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+            title="Eliminar Venta"
           >
             <Trash2 size={16} />
           </button>

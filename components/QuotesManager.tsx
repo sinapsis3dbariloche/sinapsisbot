@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Quote, Customer, QuoteItem } from '../types';
 import { 
   FileText, Plus, Search, Trash2, Download, Send, CheckCircle, 
-  X, Save, Calendar, Trash, Pencil, List
+  X, Save, Calendar, Trash, Pencil, List, History
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../lib/AuthContext';
 
 import CustomerAutocomplete from './CustomerAutocomplete';
 import CustomerFormModal from './CustomerFormModal';
@@ -28,6 +29,8 @@ interface QuotesManagerProps {
 const QuotesManager: React.FC<QuotesManagerProps> = ({ 
   quotes, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, onCreateCustomer, onConvertToRemito, onViewRemito
 }) => {
+  const { user } = useAuth();
+  const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCustomer, setFilterCustomer] = useState(initialCustomerId || '');
   const [filterStatus, setFilterStatus] = useState<string>(initialStatusFilter || 'todos');
@@ -48,6 +51,8 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
   const [confirmingQuote, setConfirmingQuote] = useState<Quote | null>(null);
   const [senaAmount, setSenaAmount] = useState<number>(0);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedItemForHistory, setSelectedItemForHistory] = useState<Quote | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   
@@ -146,7 +151,19 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
     
     const finalStatus = status || newQuote.status || 'borrador';
     
-    onUpdate({ ...newQuote, status: finalStatus, isDraft: finalStatus === 'borrador' } as Quote);
+    let actionLabel = quotes.some(q => q.id === newQuote.id) ? 'Edición de Presupuesto' : 'Creación de Presupuesto';
+    let changesLabel = `Guardado como ${finalStatus}.`;
+    
+    const historyEntry = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      user: userName,
+      action: actionLabel,
+      changes: changesLabel
+    };
+    const updatedHistory = [...(newQuote.history || []), historyEntry];
+    
+    onUpdate({ ...newQuote, status: finalStatus, isDraft: finalStatus === 'borrador', history: updatedHistory } as Quote);
     setIsAdding(false);
   };
 
@@ -532,6 +549,10 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
                 setSenaAmount(q.total * 0.3);
               }}
               onViewRemito={onViewRemito}
+              onShowHistory={(quote) => {
+                setSelectedItemForHistory(quote);
+                setShowHistoryModal(true);
+              }}
             />
           ))}
 
@@ -579,6 +600,52 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
               >
                 Eliminar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {showHistoryModal && selectedItemForHistory && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  <History size={16} />
+                </div>
+                <h3 className="font-bold text-slate-800">Historial de modif.</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setSelectedItemForHistory(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+               {selectedItemForHistory.history && selectedItemForHistory.history.length > 0 ? (
+                 <div className="space-y-4">
+                   {selectedItemForHistory.history.map(entry => (
+                     <div key={entry.id} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                       <div className="flex justify-between items-start mb-2">
+                         <span className="text-xs font-bold text-slate-500">{new Date(entry.date).toLocaleString()}</span>
+                         <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{entry.user}</span>
+                       </div>
+                       <p className="text-sm font-semibold text-slate-800 mb-1">{entry.action}</p>
+                       <p className="text-xs text-slate-600 whitespace-pre-wrap">{entry.changes}</p>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="text-center py-8 text-slate-400">
+                    <History size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>No hay historial de modificaciones</p>
+                 </div>
+               )}
             </div>
           </div>
         </div>
@@ -655,9 +722,10 @@ interface QuoteRowProps {
   onDelete: (id: string) => void;
   onConfirm: (quote: Quote) => void;
   onViewRemito?: (remitoId: string) => void;
+  onShowHistory: (quote: Quote) => void;
 }
 
-const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDelete, onConfirm, onViewRemito }) => {
+const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDelete, onConfirm, onViewRemito, onShowHistory }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const dateObj = new Date(quote.date + 'T00:00:00');
@@ -675,7 +743,7 @@ const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDel
     <div className={`bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:border-orange-100 transition-all ${status === 'confirmado' ? 'border-l-4 border-l-green-500' : ''}`}>
       <div className="p-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
         {/* Number & Date */}
-        <div className="col-span-2">
+        <div className="col-span-12 lg:col-span-2">
           <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest block w-fit mb-1">
             {quote.number}
           </span>
@@ -706,7 +774,7 @@ const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDel
         </div>
 
         {/* Customer */}
-        <div className="col-span-3">
+        <div className="col-span-12 lg:col-span-2">
           <h3 className="font-black text-slate-900 uppercase text-sm leading-tight truncate" title={quote.customerName}>
             {quote.customerName}
           </h3>
@@ -714,7 +782,7 @@ const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDel
         </div>
 
         {/* Status */}
-        <div className="col-span-2 md:text-center">
+        <div className="col-span-12 lg:col-span-2 md:text-center">
           {status === 'borrador' ? (
             <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block bg-slate-100 text-slate-600 border border-slate-200">
               Para Hacer
@@ -735,14 +803,14 @@ const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDel
         </div>
 
         {/* Total */}
-        <div className="col-span-2 text-left md:text-right">
+        <div className="col-span-12 md:col-span-6 lg:col-span-2 text-left lg:text-right">
           <span className="text-lg font-black text-slate-900 tracking-tighter">
             $ {quote.total.toLocaleString('es-AR')}
           </span>
         </div>
 
         {/* Actions */}
-        <div className="col-span-3 flex justify-end items-center gap-1.5">
+        <div className="col-span-12 md:col-span-6 lg:col-span-4 flex justify-end items-center gap-1 flex-wrap lg:flex-nowrap">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
@@ -787,6 +855,13 @@ const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDel
             title="Editar Presupuesto"
           >
             <Pencil size={16} />
+          </button>
+          <button 
+            onClick={() => onShowHistory(quote)}
+            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+            title="Ver Historial"
+          >
+            <History size={16} />
           </button>
           <button 
             onClick={() => onDelete(quote.id)}
