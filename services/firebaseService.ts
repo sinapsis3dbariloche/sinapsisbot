@@ -1,8 +1,59 @@
 
 import { collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../lib/firebase';
-import { StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from '../types';
+import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from '../types';
 import { INITIAL_STOCK, INITIAL_PRINTERS, INITIAL_CUSTOMERS, INITIAL_REMITOS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE, DEFAULT_HOTEND_STOCK } from '../constants';
+
+export const subscribeToQuotes = (callback: (quotes: Quote[]) => void, onError?: (error: any) => void) => {
+  return onSnapshot(collection(db, 'quotes'), {
+    next: (snapshot) => {
+      if (snapshot.empty) return callback([]);
+      const quotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
+      callback(quotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    },
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'quotes');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
+  });
+};
+
+export const updateQuoteInDb = async (quote: Quote) => {
+  const docRef = doc(db, 'quotes', quote.id);
+  try {
+    await setDoc(docRef, quote, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, 'write', `quotes/${quote.id}`);
+  }
+};
+
+export const deleteQuoteFromDb = async (id: string) => {
+  const docRef = doc(db, 'quotes', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, 'delete', `quotes/${id}`);
+  }
+};
+
+export const getNextQuoteNumber = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, 'quotes'));
+    if (snapshot.empty) return 1; 
+    const numbers = snapshot.docs.map(d => {
+      const numPart = d.data().number.split('-')[1]?.trim();
+      return parseInt(numPart) || 0;
+    });
+    return Math.max(0, ...numbers) + 1;
+  } catch (error) {
+    return handleFirestoreError(error, 'list', 'quotes');
+  }
+};
 
 export const subscribeToPrices = (callback: (prices: PriceItem[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'prices'), {

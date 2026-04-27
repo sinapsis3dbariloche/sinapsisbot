@@ -1,26 +1,44 @@
 
-import React, { useState } from 'react';
-import { Customer } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Customer, Quote, Remito } from '../types';
 import { UserPlus, Search, Edit2, Trash2, Save, X, Phone, Mail, MapPin, Hash, Instagram, FileText, User, MessageCircle, ExternalLink, Package } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import ConfirmDialog from './ConfirmDialog';
+import Pagination from './Pagination';
 
 interface CustomerManagerProps {
   customers: Customer[];
+  quotes: Quote[];
+  remitos: Remito[];
   onUpdate: (customer: Customer) => void;
   onDelete: (id: string) => void;
   onViewRemitos: (id: string) => void;
 }
 
-const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, onDelete, onViewRemitos }) => {
+const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, quotes, remitos, onUpdate, onDelete, onViewRemitos }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState<Partial<Customer>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.cuit.includes(searchTerm)
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handleEdit = (customer: Customer) => {
@@ -287,11 +305,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCustomers.map(customer => (
-          <div key={customer.id} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all group relative">
+      <div className="flex flex-col gap-3">
+        {paginatedCustomers.map(customer => (
+          <div key={customer.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-all group relative flex flex-col md:flex-row md:items-center gap-4 justify-between">
             {editingId === customer.id ? (
-              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex items-center justify-center p-4 rounded-2xl">
                 <button 
                   onClick={() => setIsAdding(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-black"
@@ -301,26 +319,20 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
               </div>
             ) : null}
             
-            <div className="flex justify-between items-start mb-4">
-              <div className="space-y-1">
-                <h3 className="font-black text-slate-900 uppercase text-sm leading-tight">{customer.name}</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                  <User size={10} /> {customer.contactName || 'Sin contacto'}
-                </p>
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit(customer)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={14} /></button>
-                <button onClick={() => {if(confirm('¿Eliminar cliente?')) onDelete(customer.id)}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
-              </div>
+            <div className="flex flex-col min-w-[200px]">
+              <h3 className="font-black text-slate-900 uppercase text-sm leading-tight">{customer.name}</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                <User size={10} /> {customer.contactName || 'Sin contacto'}
+              </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-4 flex-1">
               {customer.phone && (
                 <a 
                   href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="flex items-center gap-3 text-slate-600 hover:text-green-600 transition-colors group/phone"
+                  className="flex items-center gap-2 text-slate-500 hover:text-green-600 transition-colors group/phone"
                   title="Enviar WhatsApp"
                 >
                   <MessageCircle size={14} className="text-slate-300 group-hover/phone:text-green-500" />
@@ -331,10 +343,10 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
               {customer.email && (
                 <a 
                   href={`mailto:${customer.email}`}
-                  className="flex items-center gap-3 text-slate-600 hover:text-blue-600 transition-colors group/mail"
+                  className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors group/mail"
                 >
                   <Mail size={14} className="text-slate-300 group-hover/mail:text-blue-500" />
-                  <span className="text-xs font-medium truncate">{customer.email}</span>
+                  <span className="text-xs font-medium truncate max-w-[150px]">{customer.email}</span>
                 </a>
               )}
 
@@ -343,59 +355,86 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${customer.street} ${customer.number}, ${customer.city || ''}`)}`} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="flex items-start gap-3 text-slate-600 hover:text-blue-600 transition-colors group/map"
+                  className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors group/map truncate max-w-[200px]"
                   title="Ver en Google Maps"
                 >
-                  <MapPin size={14} className="text-slate-300 mt-0.5 group-hover/map:text-blue-500 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium leading-tight">
-                      {customer.street} {customer.number}
-                    </span>
-                    {customer.city && (
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 group-hover/map:text-blue-400">
-                        {customer.city}
-                      </span>
-                    )}
-                  </div>
+                  <MapPin size={14} className="text-slate-300 group-hover/map:text-blue-500 flex-shrink-0" />
+                  <span className="text-xs font-medium truncate">
+                    {customer.street} {customer.number} {customer.city && `(${customer.city})`}
+                  </span>
                 </a>
               )}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-slate-50 flex flex-wrap gap-2 items-center">
-              <button 
-                onClick={() => onViewRemitos(customer.id)}
-                className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-slate-900 text-white rounded-md flex items-center gap-1 hover:bg-slate-800 transition-colors"
-              >
-                <FileText size={8} /> Ver Ventas
-              </button>
-              <button 
-                onClick={() => generateShippingLabel(customer)}
-                className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-orange-600 text-white rounded-md flex items-center gap-1 hover:bg-orange-700 transition-colors"
-              >
-                <Package size={8} /> Etiqueta Envío
-              </button>
-              {customer.instagram && (
-                <a 
-                  href={`https://instagram.com/${customer.instagram.replace('@', '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-blue-50 text-blue-600 rounded-md flex items-center gap-1 hover:bg-blue-100 transition-colors"
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="flex space-x-2 mr-4">
+                <button 
+                  onClick={() => onViewRemitos(customer.id)}
+                  className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+                  title="Ver Ventas"
                 >
-                  <Instagram size={8} /> {customer.instagram}
-                  <ExternalLink size={8} />
-                </a>
-              )}
+                  <FileText size={16} />
+                </button>
+                <button 
+                  onClick={() => generateShippingLabel(customer)}
+                  className="p-2 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition-colors"
+                  title="Etiqueta Envío"
+                >
+                  <Package size={16} />
+                </button>
+                {customer.instagram && (
+                  <a 
+                    href={`https://instagram.com/${customer.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors"
+                    title={`Instagram: ${customer.instagram}`}
+                  >
+                    <Instagram size={16} />
+                  </a>
+                )}
+              </div>
+              
+              <div className="flex gap-1 border-l border-slate-100 pl-4">
+                <button onClick={() => handleEdit(customer)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Editar"><Edit2 size={16} /></button>
+                <button 
+                  onClick={() => {
+                    const hasQuotes = quotes.some(q => q.customerId === customer.id);
+                    const hasRemitos = remitos.some(r => r.customerId === customer.id);
+                    if (hasQuotes || hasRemitos) {
+                      setAlertMessage(`No se puede eliminar el cliente "${customer.name}" porque tiene ventas o presupuestos asociados.`);
+                    } else {
+                      setDeleteConfirmId(customer.id);
+                    }
+                  }} 
+                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" 
+                  title="Eliminar"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
             
             {customer.notes && (
-              <div className="mt-3 p-2 bg-slate-50 rounded-lg border border-slate-100/50">
-                <p className="text-[9px] text-slate-400 font-medium italic line-clamp-2">
-                  <FileText size={8} className="inline mr-1" /> "{customer.notes}"
-                </p>
+              <div className="absolute -bottom-8 left-0 right-0 hidden group-hover:block z-20">
+                <div className="bg-slate-800 text-white text-[10px] p-2 rounded shadow-xl mx-4">
+                  <span className="font-bold">Notas:</span> {customer.notes}
+                </div>
               </div>
             )}
           </div>
         ))}
+
+        {filteredCustomers.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={setItemsPerPage}
+            totalItems={filteredCustomers.length}
+          />
+        )}
 
         {filteredCustomers.length === 0 && (
           <div className="col-span-full py-20 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
@@ -404,6 +443,27 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, onUpdate, 
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={deleteConfirmId !== null}
+        title="¿Eliminar cliente?"
+        message="Esta acción no se puede deshacer. Los datos del cliente se perderán."
+        onConfirm={() => {
+          if (deleteConfirmId) {
+            onDelete(deleteConfirmId);
+          }
+        }}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={alertMessage !== null}
+        title="Acción no permitida"
+        message={alertMessage || ''}
+        isAlert={true}
+        onConfirm={() => setAlertMessage(null)}
+        onCancel={() => setAlertMessage(null)}
+      />
     </div>
   );
 };

@@ -15,12 +15,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'customers', label: 'Clientes', icon: Users },
+    { id: 'quotes', label: 'Presupuestos', icon: FileText },
+    { id: 'calc', label: 'Calculadora', icon: Calculator, isSubItem: true },
     { id: 'remitos', label: 'Ventas', icon: FileText },
     { id: 'prices', label: 'Precios', icon: Tag, isSubItem: true },
-    { id: 'customers', label: 'Clientes', icon: Users, isSubItem: true },
     { id: 'expenses', label: 'Gastos', icon: DollarSign },
     { id: 'suppliers', label: 'Proveedores', icon: Briefcase, isSubItem: true },
-    { id: 'calc', label: 'Calculadora', icon: Calculator },
     { id: 'stock', label: 'Stock', icon: Package },
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
     { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },

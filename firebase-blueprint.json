@@ -69,6 +69,20 @@
         "createdAt": { "type": "string" }
       }
     },
+    "Quote": {
+      "title": "Quote",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "number": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "date": { "type": "string" },
+        "total": { "type": "number" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "string" }
+      }
+    },
     "AuthorizedUser": {
       "title": "Authorized User",
       "type": "object",
@@ -156,6 +170,7 @@
     "/stock": { "schema": "StockItem", "description": "Filament stock management" },
     "/printers": { "schema": "Printer", "description": "Workshop printers" },
     "/remitos": { "schema": "Remito", "description": "Sales and remitos" },
+    "/quotes": { "schema": "Quote", "description": "Budgets and quotes" },
     "/customers": { "schema": "Customer", "description": "Customer database" },
     "/suppliers": { "schema": "Supplier", "description": "Supplier database" },
     "/expenses": { "schema": "Expense", "description": "Business expenses" },

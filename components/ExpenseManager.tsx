@@ -1,7 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Supplier, Expense, ExpenseItem } from '../types';
 import { Search, Plus, Trash2, Edit2, Save, X, Calendar, User, FileText, DollarSign, List, ChevronRight } from 'lucide-react';
+import Pagination from './Pagination';
 
 interface ExpenseManagerProps {
   expenses: Expense[];
@@ -13,6 +14,10 @@ interface ExpenseManagerProps {
 const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -27,12 +32,32 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     createdAt: ''
   });
 
+  const uniqueYears = useMemo(() => {
+    const years = expenses.map(e => new Date(e.date).getFullYear());
+    return Array.from(new Set(years)).sort((a, b) => b - a);
+  }, [expenses]);
+
   const filteredExpenses = expenses.filter(e => {
     const matchesSearch = e.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           e.items.some(item => item.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesDraft = filterIncludeDrafts || !e.isDraft;
-    return matchesSearch && matchesDraft;
-  });
+    
+    const expenseDate = new Date(e.date);
+    const matchesMonth = monthFilter === 'all' || expenseDate.getMonth() + 1 === parseInt(monthFilter);
+    const matchesYear = yearFilter === 'all' || expenseDate.getFullYear() === parseInt(yearFilter);
+    
+    return matchesSearch && matchesDraft && matchesMonth && matchesYear;
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterIncludeDrafts, monthFilter, yearFilter]);
+
+  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  const paginatedExpenses = filteredExpenses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleAddNew = () => {
     setFormData({
@@ -109,8 +134,8 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20">
       {/* Header & Search */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4 shrink-0">
           <div className="bg-red-600 p-3 rounded-2xl text-white shadow-lg shadow-red-600/20">
             <DollarSign size={24} />
           </div>
@@ -120,33 +145,69 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full lg:justify-end">
+          <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
             <input 
               type="text"
               placeholder="Buscar gasto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-red-600"
+              className="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-red-600"
             />
           </div>
 
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
+          <div className="flex-1 min-w-[120px] w-full sm:w-auto">
+            <select 
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-red-600 cursor-pointer"
+            >
+              <option value="all">Mes: Todos</option>
+              <option value="1">Enero</option>
+              <option value="2">Febrero</option>
+              <option value="3">Marzo</option>
+              <option value="4">Abril</option>
+              <option value="5">Mayo</option>
+              <option value="6">Junio</option>
+              <option value="7">Julio</option>
+              <option value="8">Agosto</option>
+              <option value="9">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[120px] w-full sm:w-auto">
+            <select 
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-red-600 cursor-pointer"
+            >
+              <option value="all">Año: Todos</option>
+              {uniqueYears.map(year => (
+                <option key={year} value={year.toString()}>{year}</option>
+              ))}
+              {uniqueYears.length === 0 && <option value={new Date().getFullYear().toString()}>{new Date().getFullYear()}</option>}
+            </select>
+          </div>
+
+          <label className="flex flex-1 w-full justify-center sm:justify-start sm:w-auto items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
             <input 
               type="checkbox"
               checked={filterIncludeDrafts}
               onChange={(e) => setFilterIncludeDrafts(e.target.checked)}
               className="w-4 h-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
             />
-            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Ver Borradores</span>
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Ver Borradores</span>
           </label>
 
           <button 
             onClick={handleAddNew}
-            className="flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 shrink-0"
           >
-            <Plus size={16} /> Nuevo Gasto
+            <Plus size={16} /> Gasto
           </button>
         </div>
       </div>
@@ -292,7 +353,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
       {/* Expenses List */}
       {!isAdding && (
         <div className="space-y-2">
-          {filteredExpenses.map(expense => (
+          {paginatedExpenses.map(expense => (
             <ExpenseRow 
               key={expense.id} 
               expense={expense} 
@@ -300,6 +361,17 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
               onDelete={setItemToDelete} 
             />
           ))}
+
+          {filteredExpenses.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setItemsPerPage}
+              totalItems={filteredExpenses.length}
+            />
+          )}
 
           {filteredExpenses.length === 0 && (
             <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">

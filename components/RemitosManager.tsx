@@ -9,6 +9,10 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+import CustomerAutocomplete from './CustomerAutocomplete';
+import CustomerFormModal from './CustomerFormModal';
+import Pagination from './Pagination';
+
 interface RemitosManagerProps {
   remitos: Remito[];
   customers: Customer[];
@@ -16,24 +20,43 @@ interface RemitosManagerProps {
   onDelete: (id: string) => void;
   getNextNumber: () => Promise<number>;
   initialCustomerId?: string | null;
+  initialStatusFilter?: string;
+  initialProductionStatusFilter?: string;
+  onCreateCustomer?: (customer: Customer) => void;
 }
 
 const RemitosManager: React.FC<RemitosManagerProps> = ({ 
-  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId
+  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, initialProductionStatusFilter, onCreateCustomer
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCustomer, setFilterCustomer] = useState(initialCustomerId || '');
-  const [filterOnlyUnpaid, setFilterOnlyUnpaid] = useState(false);
-  const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter || 'all');
+  const [productionStatusFilter, setProductionStatusFilter] = useState(initialProductionStatusFilter || 'all');
+  const [draftFilter, setDraftFilter] = useState('all');
 
   useEffect(() => {
     if (initialCustomerId !== undefined) {
       setFilterCustomer(initialCustomerId || '');
     }
   }, [initialCustomerId]);
+  
+  useEffect(() => {
+    if (initialStatusFilter !== undefined) {
+      setStatusFilter(initialStatusFilter);
+    }
+  }, [initialStatusFilter]);
+
+  useEffect(() => {
+    if (initialProductionStatusFilter !== undefined) {
+      setProductionStatusFilter(initialProductionStatusFilter);
+    }
+  }, [initialProductionStatusFilter]);
   const [isAdding, setIsAdding] = useState(false);
   const [selectedRemito, setSelectedRemito] = useState<Remito | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // New Remito Form State
   const [newRemito, setNewRemito] = useState<Partial<Remito>>({
@@ -45,6 +68,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
     total: 0,
     status: 'Pendiente',
+    productionStatus: 'En Producción',
     amountPaid: 0,
     notes: '',
     createdAt: new Date().toISOString()
@@ -55,11 +79,26 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                           r.number.includes(searchTerm) ||
                           (r.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCustomer = filterCustomer === '' || r.customerId === filterCustomer;
-    const matchesStatus = !filterOnlyUnpaid || r.status !== 'Pagado';
-    const matchesDraft = filterIncludeDrafts || !r.isDraft;
+    const matchesStatus = statusFilter === 'all' ? true : 
+                          statusFilter === 'Deudores' ? (r.status === 'Pendiente' || r.status === 'Parcial') : 
+                          statusFilter === 'ConCobros' ? (r.amountPaid > 0) :
+                          r.status === statusFilter;
+    const currentProdStatus = r.productionStatus || 'Entregada';
+    const matchesProdStatus = productionStatusFilter === 'all' || currentProdStatus === productionStatusFilter;
+    const matchesDraft = draftFilter === 'all' ? true : (draftFilter === 'Borrador' ? r.isDraft : !r.isDraft);
     
-    return matchesSearch && matchesCustomer && matchesStatus && matchesDraft;
-  });
+    return matchesSearch && matchesCustomer && matchesStatus && matchesProdStatus && matchesDraft;
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.number.localeCompare(a.number));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCustomer, statusFilter, productionStatusFilter, draftFilter]);
+
+  const totalPages = Math.ceil(filteredRemitos.length / itemsPerPage);
+  const paginatedRemitos = filteredRemitos.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const calculateTotal = (items: RemitoItem[]) => {
     return items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
@@ -102,6 +141,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
       items: [{ description: '', quantity: 1, unitPrice: 0, total: 0 }],
       total: 0,
       status: 'Pendiente',
+      productionStatus: 'En Producción',
       isDraft: false,
       amountPaid: 0,
       paymentHistory: [],
@@ -146,7 +186,10 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80);
     doc.text('Rio Negro - Argentina', 14, 31);
-    doc.text('294 4914816', 14, 36);
+    doc.text('WhatsApp: 2944914816', 14, 36);
+    doc.setTextColor(249, 115, 22);
+    doc.text('www.sinapsis3dbariloche.com.ar', 14, 41);
+    doc.text('@sinapsis3dbariloche', 14, 46);
     
     // Al Medio: Remito [X]
     doc.setFontSize(16);
@@ -167,19 +210,39 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     doc.text(`N° ${remito.number}`, 196, 30, { align: 'right' });
     
     doc.setLineWidth(0.5);
-    doc.line(14, 45, 196, 45);
+    doc.line(14, 52, 196, 52);
     
     // Customer Info
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Nombre:', 14, 55);
+    doc.text('Nombre:', 14, 62);
     doc.setFont('helvetica', 'normal');
-    doc.text(remito.customerName, 35, 55);
+    doc.text(remito.customerName, 35, 62);
     
+    let infoY = 69;
     if (customer) {
-      doc.text(`Dirección: ${customer.street} ${customer.number}, ${customer.city}`, 14, 62);
-      doc.text(`CUIT/CUIL: ${customer.cuit || 'S/C'}`, 14, 69);
-      doc.text(`Tel: ${customer.phone || 'S/C'}`, 14, 76);
+      const addressParts = [customer.street, customer.number, customer.city].filter(Boolean);
+      if (addressParts.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Dirección:', 14, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(addressParts.join(' '), 35, infoY);
+        infoY += 7;
+      }
+      if (customer.cuit) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('CUIT/CUIL:', 14, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(customer.cuit, 35, infoY);
+        infoY += 7;
+      }
+      if (customer.phone) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Tel:', 14, infoY);
+        doc.setFont('helvetica', 'normal');
+        doc.text(customer.phone, 35, infoY);
+        infoY += 7;
+      }
     }
     
     // Table
@@ -191,7 +254,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     ]);
     
     autoTable(doc, {
-      startY: 85,
+      startY: infoY + 5,
       head: [['Descripción', 'Cantidad', 'Precio Unit.', 'Total']],
       body: tableData,
       theme: 'grid',
@@ -236,8 +299,8 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4 shrink-0">
           <div className="bg-slate-900 p-3 rounded-2xl text-white shadow-lg shadow-slate-900/20">
             <FileText size={24} />
           </div>
@@ -247,56 +310,73 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center">
-          <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
-              <input 
-                type="text"
-                placeholder="Buscar venta..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900"
-              />
-            </div>
-            
-            <select
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full lg:justify-end">
+          <div className="relative flex-1 min-w-[200px] w-full sm:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+            <input 
+              type="text"
+              placeholder="Buscar venta..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900"
+            />
+          </div>
+          
+          <div className="flex-1 min-w-[180px] w-full sm:w-auto">
+            <CustomerAutocomplete
+              customers={customers}
               value={filterCustomer}
-              onChange={(e) => setFilterCustomer(e.target.value)}
-              className="flex-1 min-w-[180px] bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900"
+              onChange={setFilterCustomer}
+              placeholder="Todos los Clientes"
+              className="py-2.5 text-xs bg-slate-50 border-none"
+            />
+          </div>
+
+          <div className="flex-1 min-w-[140px] w-full sm:w-auto">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 cursor-pointer"
             >
-              <option value="">Todos los Clientes</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              <option value="all">Pago: Todos</option>
+              <option value="Deudores">Pendientes de Cobro</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="ConCobros">Con Cobros (Parcial/Pagado)</option>
+              <option value="Parcial">Parcial</option>
+              <option value="Pagado">Pagado</option>
             </select>
+          </div>
+          
+          <div className="flex-1 min-w-[140px] w-full sm:w-auto">
+            <select 
+              value={productionStatusFilter}
+              onChange={(e) => setProductionStatusFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 cursor-pointer"
+            >
+              <option value="all">Producción: Todos</option>
+              <option value="En Producción">En Producción</option>
+              <option value="Para entregar">Para entregar</option>
+              <option value="Entregada">Entregada</option>
+            </select>
+          </div>
 
-            <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
-              <input 
-                type="checkbox"
-                checked={filterOnlyUnpaid}
-                onChange={(e) => setFilterOnlyUnpaid(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
-              />
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No Pagados</span>
-            </label>
-
-            <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors shrink-0">
-              <input 
-                type="checkbox"
-                checked={filterIncludeDrafts}
-                onChange={(e) => setFilterIncludeDrafts(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
-              />
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Ver Borradores</span>
-            </label>
+          <div className="flex-1 min-w-[140px] w-full sm:w-auto">
+            <select 
+              value={draftFilter}
+              onChange={(e) => setDraftFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 cursor-pointer"
+            >
+              <option value="all">Tipo: Todos</option>
+              <option value="Emitido">Emitida</option>
+              <option value="Borrador">Borrador</option>
+            </select>
           </div>
 
           <button 
             onClick={startNewRemito}
-            className="w-full xl:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 shrink-0"
           >
-            <Plus size={16} /> Generar Venta
+            <Plus size={16} /> Generar
           </button>
         </div>
       </div>
@@ -315,17 +395,26 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
             <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1.5 text-left">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1.5 text-left relative">
               <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cliente</label>
-              <select 
-                value={newRemito.customerId}
-                onChange={(e) => handleSelectCustomer(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900"
-              >
-                <option value="">Seleccionar Cliente...</option>
-                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div className="flex gap-2">
+                <CustomerAutocomplete
+                  customers={customers}
+                  value={newRemito.customerId || ''}
+                  onChange={handleSelectCustomer}
+                  placeholder="Seleccionar Cliente..."
+                  className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsCustomerModalOpen(true)}
+                  className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors shrink-0"
+                  title="Nuevo Cliente"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5 text-left">
               <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Fecha</label>
@@ -335,6 +424,18 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
                 onChange={(e) => setNewRemito({ ...newRemito, date: e.target.value })}
                 className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900"
               />
+            </div>
+            <div className="space-y-1.5 text-left">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Estado de Producción</label>
+              <select 
+                value={newRemito.productionStatus || 'Entregada'}
+                onChange={(e) => setNewRemito({ ...newRemito, productionStatus: e.target.value as Remito['productionStatus'] })}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900"
+              >
+                <option value="En Producción">En Producción</option>
+                <option value="Para entregar">Para entregar</option>
+                <option value="Entregada">Entregada</option>
+              </select>
             </div>
           </div>
 
@@ -422,7 +523,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
 
       {!isAdding && (
         <div className="space-y-3">
-          {filteredRemitos.map(remito => (
+          {paginatedRemitos.map(remito => (
             <RemitoRow 
               key={remito.id}
               remito={remito}
@@ -430,8 +531,20 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               onRegisterPayment={setSelectedRemito}
               onEdit={handleEditRemito}
               onDelete={setItemToDelete}
+              onUpdate={onUpdate}
             />
           ))}
+
+          {filteredRemitos.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setItemsPerPage}
+              totalItems={filteredRemitos.length}
+            />
+          )}
 
           {filteredRemitos.length === 0 && (
             <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
@@ -556,6 +669,18 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
           </div>
         </div>
       )}
+
+      <CustomerFormModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        onSave={(customer) => {
+          if (onCreateCustomer) {
+            onCreateCustomer(customer);
+            handleSelectCustomer(customer.id);
+          }
+          setIsCustomerModalOpen(false);
+        }}
+      />
     </div>
   );
 };
@@ -566,10 +691,33 @@ interface RemitoRowProps {
   onRegisterPayment: (remito: Remito) => void;
   onEdit: (remito: Remito) => void;
   onDelete: (id: string) => void;
+  onUpdate: (remito: Remito) => void;
 }
 
-const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegisterPayment, onEdit, onDelete }) => {
+const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegisterPayment, onEdit, onDelete, onUpdate }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleNextProductionStatus = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const currentStatus = remito.productionStatus || 'Entregada';
+    let nextStatus: Remito['productionStatus'] = 'Entregada';
+    
+    if (currentStatus === 'En Producción') {
+      nextStatus = 'Para entregar';
+    } else if (currentStatus === 'Para entregar') {
+      nextStatus = 'Entregada';
+    } else {
+      return;
+    }
+    
+    const newHistory = [...(remito.productionHistory || []), { status: nextStatus, date: new Date().toISOString() }];
+    
+    onUpdate({
+      ...remito,
+      productionStatus: nextStatus,
+      productionHistory: newHistory
+    });
+  };
 
   return (
     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:border-orange-100 transition-all">
@@ -593,31 +741,56 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Status */}
-        <div className="col-span-2 md:text-center">
+        <div className="col-span-2 md:text-center flex flex-col md:items-center gap-1">
           {remito.isDraft ? (
             <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block bg-slate-100 text-slate-600 border border-slate-200">
               Borrador
             </span>
           ) : (
-            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
-              remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
-              remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
-              'bg-orange-100 text-orange-700'
-            }`}>
-              {remito.status}
-            </span>
+            <>
+              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+                remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
+                remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
+                'bg-orange-100 text-orange-700'
+              }`}>
+                {remito.status}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+                (remito.productionStatus || 'Entregada') === 'En Producción' ? 'bg-purple-100 text-purple-700' :
+                (remito.productionStatus || 'Entregada') === 'Para entregar' ? 'bg-blue-100 text-blue-700' :
+                'bg-slate-800 text-white'
+              }`}>
+                {remito.productionStatus || 'Entregada'}
+              </span>
+            </>
           )}
         </div>
 
         {/* Total */}
-        <div className="col-span-2 text-left md:text-right">
+        <div className="col-span-2 text-left md:text-right flex flex-col md:items-end">
           <span className="text-lg font-black text-slate-900 tracking-tighter">
             $ {remito.total.toLocaleString('es-AR')}
           </span>
+          {remito.status === 'Parcial' && (
+            <span className="text-[10px] font-black text-red-600 tracking-widest uppercase">
+              Pendiente: ${(remito.total - remito.amountPaid).toLocaleString('es-AR')}
+            </span>
+          )}
         </div>
 
         {/* Actions */}
         <div className="col-span-3 flex justify-end items-center gap-1.5">
+          {(remito.productionStatus === 'En Producción' || remito.productionStatus === 'Para entregar') && (
+            <button 
+              onClick={handleNextProductionStatus}
+              className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border border-slate-200 hover:border-slate-300 text-slate-600 bg-white hover:bg-slate-50 flex items-center gap-1"
+              title={remito.productionStatus === 'En Producción' ? 'Pasar a Para Entregar' : 'Pasar a Entregada'}
+            >
+              <ChevronRight size={14} />
+              {remito.productionStatus === 'En Producción' ? 'Para Entregar' : 'Entregada'}
+            </button>
+          )}
+
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
@@ -674,8 +847,8 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
                 <div className="col-span-3 text-[10px] font-black text-slate-900 text-right">${item.total.toLocaleString()}</div>
               </div>
             ))}
-            {(remito.notes || remito.paymentHistory?.length > 0) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {(remito.notes || remito.paymentHistory?.length > 0 || remito.productionHistory?.length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                 {remito.notes && (
                   <div className="p-3 bg-white rounded-xl border border-slate-100">
                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 font-black">Observaciones:</p>
@@ -690,6 +863,19 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
                         <div key={i} className="flex justify-between items-center text-[9px] text-slate-500 font-bold">
                           <span>{new Date(p.date).toLocaleDateString()}</span>
                           <span className="text-green-600">$ {p.amount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {remito.productionHistory && remito.productionHistory.length > 0 && (
+                  <div className="p-3 bg-white rounded-xl border border-slate-100">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1 font-black">Historial de Producción:</p>
+                    <div className="space-y-1">
+                      {remito.productionHistory.map((h, i) => (
+                        <div key={i} className="flex justify-between items-center text-[9px] text-slate-500 font-bold">
+                          <span>{new Date(h.date).toLocaleDateString()} {new Date(h.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                          <span className="text-purple-600">{h.status}</span>
                         </div>
                       ))}
                     </div>

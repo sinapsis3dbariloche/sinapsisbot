@@ -61,7 +61,8 @@ service cloud.firestore {
              data.amountPaid is number &&
              data.items is list &&
              data.createdAt is string &&
-             (!('isDraft' in data) || data.isDraft is bool);
+             (!('isDraft' in data) || data.isDraft is bool) &&
+             (!('productionStatus' in data) || data.productionStatus in ['En Producción', 'Para entregar', 'Entregada']);
     }
 
     function isValidPrinter(data) {
@@ -93,6 +94,19 @@ service cloud.firestore {
              data.total is number &&
              data.createdAt is string &&
              (!('isDraft' in data) || data.isDraft is bool);
+    }
+
+    function isValidQuote(data) {
+      return data.keys().hasAll(['id', 'number', 'customerId', 'customerName', 'total', 'items', 'date', 'createdAt']) &&
+             data.id is string &&
+             data.number is string &&
+             data.customerId is string &&
+             data.customerName is string &&
+             data.total is number &&
+             data.items is list &&
+             data.createdAt is string &&
+             (!('isDraft' in data) || data.isDraft is bool) &&
+             (!('status' in data) || data.status in ['borrador', 'presupuestado', 'confirmado']);
     }
 
     function isValidPriceItem(data) {
@@ -148,6 +162,13 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAdmin() && isValidId(remitoId) && isValidRemito(request.resource.data);
       allow update: if isAdmin() && isValidRemito(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /quotes/{quoteId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(quoteId) && isValidQuote(request.resource.data);
+      allow update: if isAdmin() && isValidQuote(request.resource.data);
       allow delete: if isAdmin();
     }
 

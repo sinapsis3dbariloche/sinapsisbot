@@ -8,12 +8,17 @@ import PrinterManager from './components/PrinterManager';
 import BudgetCalculator from './components/BudgetCalculator';
 import CustomerManager from './components/CustomerManager';
 import RemitosManager from './components/RemitosManager';
+import QuotesManager from './components/QuotesManager';
 import SupplierManager from './components/SupplierManager';
 import ExpenseManager from './components/ExpenseManager';
 import Dashboard from './components/Dashboard';
 import PricesManager from './components/PricesManager';
-import { StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from './types';
+import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from './types';
 import { 
+  subscribeToQuotes,
+  updateQuoteInDb,
+  deleteQuoteFromDb,
+  getNextQuoteNumber,
   subscribeToStock, 
   subscribeToSettings, 
   subscribeToPrinters,
@@ -52,12 +57,25 @@ const App: React.FC = () => {
   const { user, loading, isAdmin, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
+  const [quoteFilterStatus, setQuoteFilterStatus] = useState<string>('todos');
+  const [remitoFilterStatus, setRemitoFilterStatus] = useState<string>('all');
+  const [remitoProductionFilterStatus, setRemitoProductionFilterStatus] = useState<string>('all');
+
+  const handleNavigate = (tab: string, filters?: any) => {
+    setActiveTab(tab);
+    if (filters) {
+      if (filters.quoteStatus) setQuoteFilterStatus(filters.quoteStatus);
+      if (filters.remitoStatus) setRemitoFilterStatus(filters.remitoStatus);
+      if (filters.remitoProdStatus) setRemitoProductionFilterStatus(filters.remitoProdStatus);
+    }
+  };
   const [stock, setStock] = useState<StockItem[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [remitos, setRemitos] = useState<Remito[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
   const [prices, setPrices] = useState<PriceItem[]>([]);
   const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
   const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
@@ -134,6 +152,10 @@ const App: React.FC = () => {
       setRemitos(newRemitos);
     }, handleError);
 
+    const unsubQuotes = subscribeToQuotes((newQuotes) => {
+      setQuotes(newQuotes);
+    }, handleError);
+
     const unsubSettings = subscribeToSettings((settings) => {
       if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
       if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
@@ -150,6 +172,7 @@ const App: React.FC = () => {
       unsubExpenses();
       unsubPrices();
       unsubRemitos();
+      unsubQuotes();
       unsubSettings();
     };
   }, [user, isAdmin]);
@@ -219,6 +242,37 @@ const App: React.FC = () => {
 
   const handleDeleteRemito = async (id: string) => {
     await deleteRemitoFromDb(id);
+  };
+
+  const handleUpdateQuote = async (quote: Quote) => {
+    await updateQuoteInDb(quote);
+  };
+
+  const handleConvertToRemito = async (quote: Quote, senaAmount: number) => {
+    const nextNumber = await getNextRemitoNumber();
+    const formattedNumber = `0001 - ${nextNumber.toString().padStart(5, '0')}`;
+    
+    const remito: Remito = {
+      id: `R${Date.now()}`,
+      number: formattedNumber,
+      customerId: quote.customerId,
+      customerName: quote.customerName,
+      date: new Date().toISOString().split('T')[0],
+      items: quote.items.map(i => ({...i})),
+      total: quote.total,
+      status: senaAmount >= quote.total ? 'Pagado' : senaAmount > 0 ? 'Parcial' : 'Pendiente',
+      productionStatus: 'En Producción',
+      amountPaid: senaAmount,
+      paymentHistory: senaAmount > 0 ? [{ amount: senaAmount, date: new Date().toISOString().split('T')[0] }] : [],
+      createdAt: new Date().toISOString()
+    };
+    
+    await updateRemitoInDb(remito);
+    await updateQuoteInDb({ ...quote, status: 'confirmado', convertedRemitoId: remito.id, confirmedAt: new Date().toISOString() });
+  };
+
+  const handleDeleteQuote = async (id: string) => {
+    await deleteQuoteFromDb(id);
   };
 
   const handleUpdateHotendStock = async (newStock: number) => {
@@ -302,7 +356,7 @@ const App: React.FC = () => {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nube OK</span>
         </div>
 
-        {activeTab === 'dashboard' && <Dashboard remitos={remitos} expenses={expenses} />}
+        {activeTab === 'dashboard' && <Dashboard remitos={remitos} expenses={expenses} quotes={quotes} onNavigateAction={handleNavigate} />}
         
         {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
         
@@ -370,9 +424,31 @@ const App: React.FC = () => {
           />
         )}
 
+        {activeTab === 'quotes' && (
+          <QuotesManager 
+            quotes={quotes}
+            customers={customers}
+            onUpdate={handleUpdateQuote}
+            onDelete={handleDeleteQuote}
+            getNextNumber={getNextQuoteNumber}
+            onCreateCustomer={handleUpdateCustomer}
+            initialStatusFilter={quoteFilterStatus}
+            onConvertToRemito={handleConvertToRemito}
+            onViewRemito={(remitoId) => {
+              const remito = remitos.find(r => r.id === remitoId);
+              if (remito) {
+                setRemitoFilterCustomerId(remito.customerId);
+              }
+              setActiveTab('remitos');
+            }}
+          />
+        )}
+
         {activeTab === 'customers' && (
           <CustomerManager 
             customers={customers}
+            quotes={quotes}
+            remitos={remitos}
             onUpdate={handleUpdateCustomer}
             onDelete={handleDeleteCustomer}
             onViewRemitos={handleViewRemitosByCustomer}
@@ -412,6 +488,9 @@ const App: React.FC = () => {
             onDelete={handleDeleteRemito}
             getNextNumber={getNextRemitoNumber}
             initialCustomerId={remitoFilterCustomerId}
+            initialStatusFilter={remitoFilterStatus}
+            initialProductionStatusFilter={remitoProductionFilterStatus}
+            onCreateCustomer={handleUpdateCustomer}
           />
         )}
       </div>

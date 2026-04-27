@@ -233,31 +233,25 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
       )}
 
       {/* Grid List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-3">
         {filteredSuppliers.map(supplier => (
-          <div key={supplier.id} className="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 hover:shadow-md transition-all group relative">
-            <div className="flex justify-between items-start mb-4">
-              <div className="space-y-1">
-                <h3 className="font-black text-slate-900 uppercase text-sm leading-tight">{supplier.name}</h3>
-                {supplier.contactName && (
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                    <Edit2 size={10} /> {supplier.contactName}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit(supplier)} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg"><Edit2 size={14} /></button>
-                <button onClick={() => setItemToDelete(supplier.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
-              </div>
+          <div key={supplier.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-all group relative flex flex-col md:flex-row md:items-center gap-4 justify-between">
+            <div className="flex flex-col min-w-[200px]">
+              <h3 className="font-black text-slate-900 uppercase text-sm leading-tight">{supplier.name}</h3>
+              {supplier.contactName && (
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                  <Edit2 size={10} /> {supplier.contactName}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-4 flex-1">
               {supplier.phone && (
                 <a 
                   href={`https://wa.me/${supplier.phone.replace(/\D/g, '')}`} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="flex items-center gap-3 text-slate-600 hover:text-green-600 transition-colors group/phone"
+                  className="flex items-center gap-2 text-slate-500 hover:text-green-600 transition-colors group/phone"
                   title="Enviar WhatsApp"
                 >
                   <MessageCircle size={14} className="text-slate-300 group-hover/phone:text-green-500" />
@@ -268,10 +262,10 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
               {supplier.email && (
                 <a 
                   href={`mailto:${supplier.email}`}
-                  className="flex items-center gap-3 text-slate-600 hover:text-purple-600 transition-colors group/mail"
+                  className="flex items-center gap-2 text-slate-500 hover:text-purple-600 transition-colors group/mail"
                 >
                   <Mail size={14} className="text-slate-300 group-hover/mail:text-purple-500" />
-                  <span className="text-xs font-medium truncate">{supplier.email}</span>
+                  <span className="text-xs font-medium truncate max-w-[150px]">{supplier.email}</span>
                 </a>
               )}
 
@@ -280,54 +274,54 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${supplier.street} ${supplier.number}, ${supplier.city || ''}`)}`} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="flex items-start gap-3 text-slate-600 hover:text-purple-600 transition-colors group/map"
+                  className="flex items-center gap-2 text-slate-500 hover:text-purple-600 transition-colors group/map truncate max-w-[200px]"
                   title="Ver en Google Maps"
                 >
-                  <MapPin size={14} className="text-slate-300 mt-0.5 group-hover/map:text-purple-500 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium leading-tight">
-                      {supplier.street} {supplier.number}
-                    </span>
-                    {supplier.city && (
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 group-hover/map:text-purple-400">
-                        {supplier.city}
-                      </span>
-                    )}
-                  </div>
+                  <MapPin size={14} className="text-slate-300 group-hover/map:text-purple-500 flex-shrink-0" />
+                  <span className="text-xs font-medium truncate">
+                    {supplier.street} {supplier.number} {supplier.city && `(${supplier.city})`}
+                  </span>
                 </a>
               )}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-slate-50 flex flex-wrap gap-2 items-center">
-              {supplier.web && (
-                <a 
-                  href={formatUrl(supplier.web)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-purple-50 text-purple-600 rounded-md flex items-center gap-1 hover:bg-purple-100 transition-colors"
-                >
-                  <Globe size={8} /> Web
-                  <ExternalLink size={8} />
-                </a>
-              )}
-              {supplier.instagram && (
-                <a 
-                  href={`https://instagram.com/${supplier.instagram.replace('@', '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-blue-50 text-blue-600 rounded-md flex items-center gap-1 hover:bg-blue-100 transition-colors"
-                >
-                  <Instagram size={8} /> {supplier.instagram}
-                  <ExternalLink size={8} />
-                </a>
-              )}
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="flex space-x-2 mr-4">
+                {supplier.web && (
+                  <a 
+                    href={formatUrl(supplier.web)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                    title={`Web: ${formatUrl(supplier.web)}`}
+                  >
+                    <Globe size={16} />
+                  </a>
+                )}
+                {supplier.instagram && (
+                  <a 
+                    href={`https://instagram.com/${supplier.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors"
+                    title={`Instagram: ${supplier.instagram}`}
+                  >
+                    <Instagram size={16} />
+                  </a>
+                )}
+              </div>
+              
+              <div className="flex gap-1 border-l border-slate-100 pl-4">
+                <button onClick={() => handleEdit(supplier)} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg" title="Editar"><Edit2 size={16} /></button>
+                <button onClick={() => setItemToDelete(supplier.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Eliminar"><Trash2 size={16} /></button>
+              </div>
             </div>
             
             {supplier.notes && (
-              <div className="mt-3 p-2 bg-slate-50 rounded-lg border border-slate-100/50">
-                <p className="text-[9px] text-slate-400 font-medium italic line-clamp-2">
-                  <FileText size={8} className="inline mr-1" /> "{supplier.notes}"
-                </p>
+              <div className="absolute -bottom-8 left-0 right-0 hidden group-hover:block z-20">
+                <div className="bg-slate-800 text-white text-[10px] p-2 rounded shadow-xl mx-4">
+                  <span className="font-bold">Notas:</span> {supplier.notes}
+                </div>
               </div>
             )}
           </div>

@@ -50,11 +50,36 @@ export interface Remito {
   items: RemitoItem[];
   total: number;
   status: 'Pendiente' | 'Parcial' | 'Pagado';
+  productionStatus?: 'En Producción' | 'Para entregar' | 'Entregada';
   amountPaid: number;
   paymentHistory?: PaymentRecord[];
+  productionHistory?: { status: 'En Producción' | 'Para entregar' | 'Entregada', date: string }[];
   notes?: string;
   createdAt: string;
   isDraft?: boolean;
+}
+
+export interface QuoteItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Quote {
+  id: string;
+  number: string;
+  customerId: string;
+  customerName: string;
+  date: string;
+  items: QuoteItem[];
+  total: number;
+  status?: 'borrador' | 'presupuestado' | 'confirmado';
+  convertedRemitoId?: string;
+  confirmedAt?: string;
+  notes?: string;
+  createdAt: string;
+  isDraft?: boolean; // Kept for backwards compatibility
 }
 
 export interface Customer {
