@@ -780,17 +780,6 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
 
         {/* Actions */}
         <div className="col-span-3 flex justify-end items-center gap-1.5">
-          {(remito.productionStatus === 'En Producción' || remito.productionStatus === 'Para entregar') && (
-            <button 
-              onClick={handleNextProductionStatus}
-              className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border border-slate-200 hover:border-slate-300 text-slate-600 bg-white hover:bg-slate-50 flex items-center gap-1"
-              title={remito.productionStatus === 'En Producción' ? 'Pasar a Para Entregar' : 'Pasar a Entregada'}
-            >
-              <ChevronRight size={14} />
-              {remito.productionStatus === 'En Producción' ? 'Para Entregar' : 'Entregada'}
-            </button>
-          )}
-
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
@@ -798,6 +787,17 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
           >
             <List size={16} />
           </button>
+
+          {(remito.productionStatus === 'En Producción' || remito.productionStatus === 'Para entregar') && (
+            <button 
+              onClick={handleNextProductionStatus}
+              className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
+              title={remito.productionStatus === 'En Producción' ? 'Pasar a Para Entregar' : 'Pasar a Entregada'}
+            >
+              <ChevronRight size={16} />
+            </button>
+          )}
+
           {!remito.isDraft && (
             <>
               <button 
