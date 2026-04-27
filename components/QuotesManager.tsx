@@ -292,12 +292,12 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     const senaAmount = quote.total * 0.3;
-    const legendText = `El inicio de la producción queda sujeto a la acreditación de una seña del 30% ($${senaAmount.toLocaleString('es-AR')}) del valor total.\nUna vez recibido el comprobante, el pedido se considerará confirmado.`;
-    const splitLegend = doc.splitTextToSize(legendText, 150);
+    const legend1 = `El inicio de la producción queda sujeto a la acreditación de una seña del 30% ($${senaAmount.toLocaleString('es-AR')}) del valor total.`;
+    const legend2 = `Una vez recibido el comprobante, el pedido se considerará confirmado.`;
     const legendY = finalY + 8;
-    doc.text(splitLegend, 196, legendY, { align: 'right' });
+    doc.text([legend1, legend2], 105, legendY, { align: 'center' });
     
-    let currentY = legendY + (splitLegend.length * 5);
+    let currentY = legendY + 10;
     
     if (quote.notes) {
       doc.setFont('helvetica', 'bold');

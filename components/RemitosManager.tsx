@@ -811,7 +811,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden hover:border-orange-100 transition-all">
       <div className="p-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
         {/* Number & Date */}
-        <div className="col-span-12 lg:col-span-2">
+        <div className="col-span-12 md:col-span-3 lg:col-span-2">
           <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md uppercase tracking-widest block w-fit mb-1">
             {remito.number}
           </span>
@@ -821,7 +821,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Customer */}
-        <div className="col-span-12 lg:col-span-2">
+        <div className="col-span-12 md:col-span-4 lg:col-span-3">
           <h3 className="font-black text-slate-900 uppercase text-sm leading-tight truncate" title={remito.customerName}>
             {remito.customerName}
           </h3>
@@ -829,13 +829,13 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Status */}
-        <div className="col-span-12 lg:col-span-2 md:text-center flex flex-col md:items-center gap-1">
+        <div className="col-span-12 md:col-span-5 lg:col-span-2 flex flex-row lg:flex-col items-center lg:items-center gap-1.5 lg:gap-1">
           {remito.isDraft ? (
             <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block bg-slate-100 text-slate-600 border border-slate-200">
               Borrador
             </span>
           ) : (
-            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block whitespace-nowrap ${
               remito.status === 'Pagado' ? 'bg-green-100 text-green-700' :
               remito.status === 'Parcial' ? 'bg-blue-100 text-blue-700' :
               'bg-orange-100 text-orange-700'
@@ -844,7 +844,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
             </span>
           )}
           
-          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block ${
+          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-block whitespace-nowrap ${
             (remito.productionStatus || 'Entregada') === 'En Producción' ? 'bg-purple-100 text-purple-700' :
             (remito.productionStatus || 'Entregada') === 'Para entregar' ? 'bg-blue-100 text-blue-700' :
             'bg-slate-800 text-white'
@@ -854,8 +854,8 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Total */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-2 text-left md:text-right flex flex-col lg:items-end">
-          <span className="text-lg font-black text-slate-900 tracking-tighter">
+        <div className="col-span-12 md:col-span-4 lg:col-span-2 text-left lg:text-right flex flex-row lg:flex-col justify-between lg:justify-end items-center lg:items-end">
+          <span className="text-lg font-black text-slate-900 tracking-tighter whitespace-nowrap">
             $ {remito.total.toLocaleString('es-AR')}
           </span>
           {remito.status === 'Parcial' && (
@@ -866,7 +866,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Actions */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 flex justify-end items-center gap-1 flex-wrap lg:flex-nowrap">
+        <div className="col-span-12 md:col-span-8 lg:col-span-3 flex justify-end items-center gap-1 flex-wrap lg:flex-nowrap">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
