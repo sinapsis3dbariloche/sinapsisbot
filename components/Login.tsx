@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { LogIn, ShieldAlert, Cpu, Lock, User as UserIcon, Loader2, Eye, EyeOff, Globe, Instagram } from 'lucide-react';
+import { LogIn, ShieldAlert, Cpu, Lock, User as UserIcon, Loader2, Eye, EyeOff, Globe, Instagram, Box } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Login: React.FC = () => {
@@ -172,6 +172,9 @@ const Login: React.FC = () => {
               </a>
               <a href="https://www.instagram.com/sinapsis3dbariloche/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Instagram">
                 <Instagram size={16} />
+              </a>
+              <a href="https://makerworld.com/es/@sinapsis3d" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="MakerWorld">
+                <Box size={16} />
               </a>
             </div>
           </div>

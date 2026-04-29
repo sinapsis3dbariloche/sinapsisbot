@@ -1,5 +1,5 @@
 
-import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag, Globe, Instagram } from 'lucide-react';
+import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag, Globe, Instagram, Box } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 
@@ -52,6 +52,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                 </a>
                 <a href="https://www.instagram.com/sinapsis3dbariloche/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Instagram">
                   <Instagram size={18} />
+                </a>
+                <a href="https://makerworld.com/es/@sinapsis3d" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="MakerWorld">
+                  <Box size={18} />
                 </a>
               </div>
             </div>
