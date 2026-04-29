@@ -1,4 +1,6 @@
 
+declare const __BUILD_TIME__: string;
+
 export enum FilamentType {
   PLA = 'PLA',
   PETG = 'PET-G'

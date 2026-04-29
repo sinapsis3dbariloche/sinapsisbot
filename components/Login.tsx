@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { LogIn, ShieldAlert, Cpu, Lock, User as UserIcon, Loader2, Eye, EyeOff } from 'lucide-react';
+import { LogIn, ShieldAlert, Cpu, Lock, User as UserIcon, Loader2, Eye, EyeOff, Globe, Instagram } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Login: React.FC = () => {
@@ -45,10 +45,10 @@ const Login: React.FC = () => {
           
           <div className="space-y-4">
             <h1 className="text-4xl font-black text-white leading-tight tracking-tighter uppercase italic">
-              SINAPSIS 3D
+              SINASOFT
             </h1>
             <p className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.4em] opacity-80">
-              SISTEMA DE GESTIÓN OPERATIVA
+              Gestión
             </p>
           </div>
 
@@ -162,10 +162,18 @@ const Login: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-10">
+          <div className="pt-10 space-y-4">
             <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
               &copy; {new Date().getFullYear()} Sinapsis 3D Bariloche
             </p>
+            <div className="flex justify-center gap-4 text-slate-500">
+              <a href="https://www.sinapsis3dbariloche.com.ar/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Sitio Web">
+                <Globe size={16} />
+              </a>
+              <a href="https://www.instagram.com/sinapsis3dbariloche/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Instagram">
+                <Instagram size={16} />
+              </a>
+            </div>
           </div>
         </div>
       </motion.div>

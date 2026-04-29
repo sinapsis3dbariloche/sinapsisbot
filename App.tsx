@@ -52,6 +52,7 @@ import { Loader2, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from './lib/AuthContext';
 import Login from './components/Login';
 import { testFirestoreConnection } from './lib/firebase';
+import { NewVersionToast } from './components/NewVersionToast';
 
 const App: React.FC = () => {
   const { user, loading, isAdmin, logout } = useAuth();
@@ -493,6 +494,7 @@ const App: React.FC = () => {
             onCreateCustomer={handleUpdateCustomer}
           />
         )}
+        <NewVersionToast />
       </div>
     </Layout>
   );
