@@ -1,5 +1,5 @@
 
-import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag, Globe, Instagram, Box } from 'lucide-react';
+import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag, Globe, Instagram, Box, Hexagon } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 
@@ -55,6 +55,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                 </a>
                 <a href="https://makerworld.com/es/@sinapsis3d" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="MakerWorld">
                   <Box size={18} />
+                </a>
+                <a href="https://cults3d.com/es/usuarios/Sinapsis3D" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Cults3D">
+                  <Hexagon size={18} />
                 </a>
               </div>
             </div>

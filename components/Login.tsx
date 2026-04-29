@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { LogIn, ShieldAlert, Cpu, Lock, User as UserIcon, Loader2, Eye, EyeOff, Globe, Instagram, Box } from 'lucide-react';
+import { LogIn, ShieldAlert, Cpu, Lock, User as UserIcon, Loader2, Eye, EyeOff, Globe, Instagram, Box, Hexagon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Login: React.FC = () => {
@@ -175,6 +175,9 @@ const Login: React.FC = () => {
               </a>
               <a href="https://makerworld.com/es/@sinapsis3d" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="MakerWorld">
                 <Box size={16} />
+              </a>
+              <a href="https://cults3d.com/es/usuarios/Sinapsis3D" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Cults3D">
+                <Hexagon size={16} />
               </a>
             </div>
           </div>
