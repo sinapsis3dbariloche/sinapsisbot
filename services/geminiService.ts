@@ -40,7 +40,55 @@ const calculateBudgetDeclaration: FunctionDeclaration = {
   }
 };
 
+export async function suggestPriceItemsFromSales(salesItems: { description: string, price: number }[]): Promise<any[]> {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const prompt = `
+Eres un asistente experto en analizar ventas y generar listas de precios genéricas.
+Analiza la siguiente lista de items vendidos. Tu tarea es:
+1. Agrupar items similares en nombres genéricos. Por ejemplo, "topper de torta de mickey" y "topper de torta pato donald" deberian agruparse en "Topper de torta de personaje".
+2. Determinar un "Precio Mayorista" basado en el precio encontrado para ese tipo de items en las ventas (toma el precio máximo o más representativo encontrado).
+3. Calcular el "Precio Minorista" aumentándole al mayorista un 20% y redondeando hacia arriba.
+4. Establecer la "Cantidad mínima mayorista" siempre a 5 por defecto.
+
+A continuación, los items vendidos:
+${JSON.stringify(salesItems, null, 2)}
+`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              description: { type: Type.STRING },
+              wholesalePrice: { type: Type.NUMBER },
+              retailPrice: { type: Type.NUMBER },
+              wholesaleMinQuantity: { type: Type.NUMBER }
+            },
+            required: ["description", "wholesalePrice", "retailPrice", "wholesaleMinQuantity"]
+          }
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text);
+    }
+    return [];
+  } catch (error) {
+    console.error("Error generating price suggestions:", error);
+    throw error;
+  }
+}
+
 export class SinapsisBotService {
+
   constructor(
     private stock: any[], 
     private orders: any[], 

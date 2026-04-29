@@ -476,6 +476,7 @@ const App: React.FC = () => {
         {activeTab === 'prices' && (
           <PricesManager 
             prices={prices}
+            remitos={remitos}
             onUpdate={handleUpdatePrice}
             onDelete={handleDeletePrice}
           />

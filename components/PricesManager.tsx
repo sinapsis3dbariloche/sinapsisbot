@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { PriceItem, PriceHistoryEntry } from '../types';
-import { Search, Edit2, Trash2, Save, X, Plus, DollarSign, Tag, HandCoins, History } from 'lucide-react';
+import { PriceItem, PriceHistoryEntry, Remito } from '../types';
+import { Search, Edit2, Trash2, Save, X, Plus, DollarSign, Tag, HandCoins, History, Sparkles, Loader2 } from 'lucide-react';
+import { suggestPriceItemsFromSales } from '../services/geminiService';
 
 interface PricesManagerProps {
   prices: PriceItem[];
+  remitos?: Remito[];
   onUpdate: (price: PriceItem) => void;
   onDelete: (id: string) => void;
 }
 
-const PricesManager: React.FC<PricesManagerProps> = ({ prices, onUpdate, onDelete }) => {
+const PricesManager: React.FC<PricesManagerProps> = ({ prices, remitos = [], onUpdate, onDelete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [historyPriceId, setHistoryPriceId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<PriceItem>>({});
@@ -81,6 +84,51 @@ const PricesManager: React.FC<PricesManagerProps> = ({ prices, onUpdate, onDelet
     setIsAdding(false);
   };
 
+  const handleAnalyzeSales = async () => {
+    if (!remitos || remitos.length === 0) {
+      alert("No hay ventas cargadas para analizar.");
+      return;
+    }
+    
+    setIsAnalyzing(true);
+    try {
+      const allItems = remitos.flatMap(r => r.items.map(i => ({ 
+        description: i.description, 
+        price: i.unitPrice 
+      })));
+      
+      const suggestions = await suggestPriceItemsFromSales(allItems);
+      
+      if (suggestions && suggestions.length > 0) {
+        let addedCount = 0;
+        for (const sug of suggestions) {
+          // If a price with this description already exists, skip it to avoid duplicates
+          if (!prices.some(p => p.description.toLowerCase() === sug.description.toLowerCase())) {
+            const newPrice: PriceItem = {
+              id: crypto.randomUUID(),
+              description: sug.description,
+              wholesalePrice: sug.wholesalePrice,
+              retailPrice: sug.retailPrice,
+              wholesaleMinQuantity: sug.wholesaleMinQuantity,
+              createdAt: new Date().toISOString(),
+              history: []
+            };
+            await onUpdate(newPrice);
+            addedCount++;
+          }
+        }
+        alert(`Análisis completado. Se han añadido ${addedCount} precios sugeridos basados en las ventas.`);
+      } else {
+        alert("No se pudieron determinar sugerencias o ya existían en la lista.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Ocurrió un error al analizar las ventas.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20">
       {/* Header & Search */}
@@ -106,6 +154,14 @@ const PricesManager: React.FC<PricesManagerProps> = ({ prices, onUpdate, onDelet
               className="w-full sm:w-64 bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-emerald-600"
             />
           </div>
+          <button 
+            onClick={handleAnalyzeSales}
+            disabled={isAnalyzing}
+            className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            Sugerir
+          </button>
           <button 
             onClick={handleAddNew}
             className="flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
