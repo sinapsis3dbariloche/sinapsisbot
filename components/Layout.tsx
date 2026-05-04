@@ -13,6 +13,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const { logout, user } = useAuth();
 
+  const versionString = React.useMemo(() => {
+    if (typeof __BUILD_TIME__ === 'undefined' || __BUILD_TIME__ === 'dev') return 'v.DEV';
+    const date = new Date(parseInt(__BUILD_TIME__, 10));
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `v${year}.${month}.${day}-${hours}${minutes}`;
+  }, []);
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Clientes', icon: Users },
@@ -43,13 +54,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
             <div className="flex flex-col items-center">
               <button 
                 onClick={() => setActiveTab('dashboard')} 
-                className="text-center cursor-pointer hover:opacity-80 transition-opacity focus:outline-none"
+                className="text-center cursor-pointer hover:opacity-80 transition-opacity focus:outline-none flex flex-col items-center"
               >
                 <h1 className="text-2xl font-black text-white leading-tight tracking-tighter uppercase italic">SINASOFT</h1>
                 <p className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.4em] mt-1 opacity-80">Gestión</p>
+                <div className="mt-3 bg-slate-900 border border-slate-800 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest text-[8px] font-black">
+                  {versionString}
+                </div>
               </button>
               
-              <div className="flex gap-4 mt-4 text-slate-400">
+              <div className="flex gap-4 mt-6 text-slate-400">
                 <a href="https://www.sinapsis3dbariloche.com.ar/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Sitio Web">
                   <Globe size={18} />
                 </a>

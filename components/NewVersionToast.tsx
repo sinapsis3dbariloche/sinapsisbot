@@ -19,7 +19,7 @@ export const NewVersionToast: React.FC = () => {
       const data = snapshot.data();
       
       if (!data) {
-        // Inicializar el documento si no existe, solo si estamos en un build real
+        // Inicializar el documento si no existe
         if (currentVersion !== 'dev') {
           setDoc(versionRef, { buildTime: currentVersion }, { merge: true });
         }
@@ -63,7 +63,7 @@ export const NewVersionToast: React.FC = () => {
               Nueva versión
             </h3>
             <p className="text-slate-400 text-[11px] leading-relaxed pr-2">
-              Se ha detectado una nueva actualización. Por favor recarga para aplicarla.
+              Se ha detectado una nueva versión en el sistema. Recarga para aplicarla y evitar errores de sincronización.
             </p>
             <button 
               onClick={() => setShow(false)}
@@ -72,7 +72,11 @@ export const NewVersionToast: React.FC = () => {
               <X size={16} />
             </button>
             <button 
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('v', Date.now().toString());
+                window.location.href = url.toString();
+              }}
               className="mt-3 w-full bg-orange-600 hover:bg-orange-500 text-white font-black uppercase tracking-widest text-[10px] py-2.5 rounded-xl transition-all shadow-lg shadow-orange-600/20"
             >
               Recargar página
