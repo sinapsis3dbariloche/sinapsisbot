@@ -13,7 +13,7 @@ export const NewVersionToast: React.FC = () => {
     
     if (currentVersion === 'dev') return;
 
-    const versionRef = doc(db, 'config', 'version');
+    const versionRef = doc(db, 'config', 'app_version');
     
     const unsubscribe = onSnapshot(versionRef, (snapshot) => {
       const data = snapshot.data();

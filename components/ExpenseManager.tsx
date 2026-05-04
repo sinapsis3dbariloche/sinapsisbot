@@ -10,15 +10,30 @@ interface ExpenseManagerProps {
   suppliers: Supplier[];
   onUpdate: (expense: Expense) => void;
   onDelete: (id: string) => void;
+  initialFilterMonth?: string | null;
 }
 
-const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete }) => {
+const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete, initialFilterMonth }) => {
   const { user } = useAuth();
   const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
+
+  useEffect(() => {
+    if (initialFilterMonth) {
+      const parts = initialFilterMonth.split('-');
+      if (parts.length === 2) {
+        setYearFilter(parts[0]);
+        setMonthFilter(parseInt(parts[1], 10).toString());
+      }
+    } else {
+      setMonthFilter('all');
+      setYearFilter('all');
+    }
+  }, [initialFilterMonth]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showHistoryModal, setShowHistoryModal] = useState(false);

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Remito, Customer, RemitoItem } from '../types';
 import { 
   FileText, Plus, Search, Trash2, Download, Send, CheckCircle, 
@@ -23,11 +23,12 @@ interface RemitosManagerProps {
   initialCustomerId?: string | null;
   initialStatusFilter?: string;
   initialProductionStatusFilter?: string;
+  initialFilterMonth?: string | null;
   onCreateCustomer?: (customer: Customer) => void;
 }
 
 const RemitosManager: React.FC<RemitosManagerProps> = ({ 
-  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, initialProductionStatusFilter, onCreateCustomer
+  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, initialProductionStatusFilter, initialFilterMonth, onCreateCustomer
 }) => {
   const { user } = useAuth();
   const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
@@ -37,6 +38,8 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter || 'all');
   const [productionStatusFilter, setProductionStatusFilter] = useState(initialProductionStatusFilter || 'all');
   const [draftFilter, setDraftFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedItemForHistory, setSelectedItemForHistory] = useState<Remito | null>(null);
 
@@ -57,6 +60,20 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
       setProductionStatusFilter(initialProductionStatusFilter);
     }
   }, [initialProductionStatusFilter]);
+
+  useEffect(() => {
+    if (initialFilterMonth) {
+      const parts = initialFilterMonth.split('-');
+      if (parts.length === 2) {
+        setYearFilter(parts[0]);
+        setMonthFilter(parseInt(parts[1], 10).toString());
+      }
+    } else {
+      setMonthFilter('all');
+      setYearFilter('all');
+    }
+  }, [initialFilterMonth]);
+
   const [isAdding, setIsAdding] = useState(false);
   const [selectedRemito, setSelectedRemito] = useState<Remito | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -80,6 +97,11 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     createdAt: new Date().toISOString()
   });
 
+  const uniqueYears = useMemo(() => {
+    const years = remitos.map(r => new Date(r.date).getFullYear());
+    return Array.from(new Set(years)).sort((a, b) => b - a);
+  }, [remitos]);
+
   const filteredRemitos = remitos.filter(r => {
     const matchesSearch = r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           r.number.includes(searchTerm) ||
@@ -93,12 +115,35 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
     const matchesProdStatus = productionStatusFilter === 'all' || currentProdStatus === productionStatusFilter;
     const matchesDraft = draftFilter === 'all' ? true : (draftFilter === 'Borrador' ? r.isDraft : !r.isDraft);
     
-    return matchesSearch && matchesCustomer && matchesStatus && matchesProdStatus && matchesDraft;
+    const matchesMonthYear = () => {
+      if (monthFilter === 'all' && yearFilter === 'all') return true;
+      
+      const targetMonth = monthFilter === 'all' ? null : parseInt(monthFilter);
+      const targetYear = yearFilter === 'all' ? null : parseInt(yearFilter);
+
+      const checkDate = (dString: string) => {
+        const d = new Date(dString);
+        const mOk = targetMonth === null || d.getMonth() + 1 === targetMonth;
+        const yOk = targetYear === null || d.getFullYear() === targetYear;
+        return mOk && yOk;
+      };
+
+      if (checkDate(r.date)) return true;
+
+      // also include if they had a payment in that month
+      if (r.paymentHistory && r.paymentHistory.length > 0) {
+        return r.paymentHistory.some(p => checkDate(p.date));
+      }
+
+      return false;
+    };
+    
+    return matchesSearch && matchesCustomer && matchesStatus && matchesProdStatus && matchesDraft && matchesMonthYear();
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.number.localeCompare(a.number));
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterCustomer, statusFilter, productionStatusFilter, draftFilter]);
+  }, [searchTerm, filterCustomer, statusFilter, productionStatusFilter, draftFilter, monthFilter, yearFilter]);
 
   const totalPages = Math.ceil(filteredRemitos.length / itemsPerPage);
   const paginatedRemitos = filteredRemitos.slice(
@@ -385,6 +430,41 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               <option value="all">Tipo: Todos</option>
               <option value="Emitido">Emitida</option>
               <option value="Borrador">Borrador</option>
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[120px] w-full sm:w-auto">
+            <select 
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 cursor-pointer"
+            >
+              <option value="all">Mes: Todos</option>
+              <option value="1">Enero</option>
+              <option value="2">Febrero</option>
+              <option value="3">Marzo</option>
+              <option value="4">Abril</option>
+              <option value="5">Mayo</option>
+              <option value="6">Junio</option>
+              <option value="7">Julio</option>
+              <option value="8">Agosto</option>
+              <option value="9">Septiembre</option>
+              <option value="10">Octubre</option>
+              <option value="11">Noviembre</option>
+              <option value="12">Diciembre</option>
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[100px] w-full sm:w-auto">
+            <select 
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-slate-900 cursor-pointer"
+            >
+              <option value="all">Año: Todos</option>
+              {uniqueYears.map(year => (
+                <option key={year} value={year.toString()}>{year}</option>
+              ))}
             </select>
           </div>
 

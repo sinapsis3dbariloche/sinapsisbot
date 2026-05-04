@@ -50,6 +50,7 @@ const safeParseISO = (dateStr: string | undefined | null) => {
 
 const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavigateAction }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [selectedMonthKey, setSelectedMonthKey] = useState(format(new Date(), 'yyyy-MM'));
 
   useEffect(() => {
     setIsMounted(true);
@@ -159,6 +160,36 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
       .slice(0, 5)
       .map((s, i) => ({ ...s, id: `supplier-${i}` }));
 
+    const allMonthsSet = new Set<string>();
+    Object.keys(monthlyIncome).forEach(k => allMonthsSet.add(k));
+    Object.keys(monthlyExpenses).forEach(k => allMonthsSet.add(k));
+    allMonthsSet.add(format(new Date(), 'yyyy-MM'));
+    const availableMonths = Array.from(allMonthsSet).sort((a, b) => b.localeCompare(a));
+
+    const selectedMonthIncome = monthlyIncome[selectedMonthKey] || 0;
+    const selectedMonthExpenses = monthlyExpenses[selectedMonthKey] || 0;
+
+    let selectedMonthPending = 0;
+    remitos.forEach(r => {
+      const monthKey = format(safeParseISO(r.date), 'yyyy-MM');
+      if (!r.isDraft && monthKey === selectedMonthKey) {
+        const pending = r.total - (r.amountPaid || 0);
+        if (pending > 0) {
+          selectedMonthPending += pending;
+        }
+      }
+    });
+
+    const currentMonthIncome = monthlyIncome[format(new Date(), 'yyyy-MM')] || 0;
+    const currentMonthExpenses = monthlyExpenses[format(new Date(), 'yyyy-MM')] || 0;
+
+    const selectedMonthStats = {
+      income: selectedMonthIncome,
+      expenses: selectedMonthExpenses,
+      balance: selectedMonthIncome - selectedMonthExpenses,
+      projected: (selectedMonthIncome - selectedMonthExpenses) + selectedMonthPending
+    };
+
     return {
       quotesStats,
       ventasStats,
@@ -169,9 +200,11 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
       chartData,
       topPayers,
       topDebtors,
-      topSuppliers
+      topSuppliers,
+      selectedMonthStats,
+      availableMonths
     };
-  }, [remitos, expenses]);
+  }, [remitos, expenses, quotes, selectedMonthKey]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -325,7 +358,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
       {/* Financieros */}
       <div className="space-y-4">
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-          <Wallet className="text-emerald-600" /> Balance Financiero
+          <Wallet className="text-emerald-600" /> Balance Financiero (Histórico)
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button 
@@ -395,6 +428,95 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Balance Mensual */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+            <Wallet className="text-emerald-500" /> Balance Financiero 
+            <select 
+              value={selectedMonthKey}
+              onChange={(e) => setSelectedMonthKey(e.target.value)}
+              className="ml-2 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-1.5 text-lg font-black text-emerald-600 cursor-pointer focus:ring-2 focus:ring-emerald-500 transition-colors hover:bg-emerald-100 uppercase"
+            >
+              {stats.availableMonths.map(m => (
+                <option key={m} value={m}>{format(safeParseISO(`${m}-01`), 'MMMM yyyy', { locale: es }).toUpperCase()}</option>
+              ))}
+            </select>
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <button 
+            onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros', month: selectedMonthKey })}
+            className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
+          >
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
+                <TrendingUp size={20} />
+              </div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cobros del Mes</span>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.selectedMonthStats.income)}</h3>
+              <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-green-500">
+                <span className="text-[8px] font-black uppercase tracking-widest">Ver cobros del mes</span>
+                <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </div>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => onNavigateAction('expenses', { month: selectedMonthKey })}
+            className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
+          >
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-4">
+                <TrendingDown size={20} />
+              </div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gastos del Mes</span>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.selectedMonthStats.expenses)}</h3>
+              <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-red-500">
+                <span className="text-[8px] font-black uppercase tracking-widest">Ver gastos del mes</span>
+                <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </div>
+            </div>
+          </button>
+
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                <Wallet size={20} />
+              </div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Balance Neto</span>
+              <h3 className={`text-xl font-black tracking-tight ${stats.selectedMonthStats.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {formatCurrency(stats.selectedMonthStats.balance)}
+              </h3>
+              <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-slate-400">
+                <span className="text-[8px] font-black uppercase tracking-widest">Este mes</span>
+              </div>
+            </div>
+          </div>
+
+          {selectedMonthKey === format(new Date(), 'yyyy-MM') && (
+            <div className="bg-white p-6 rounded-[2rem] border border-cyan-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex flex-col h-full">
+                <div className="w-10 h-10 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center mb-4 border border-cyan-100">
+                  <LineChart size={20} />
+                </div>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Balance Proyect.</span>
+                <h3 className={`text-xl font-black tracking-tight ${stats.selectedMonthStats.projected >= 0 ? 'text-teal-600' : 'text-red-600'}`}>
+                  {formatCurrency(stats.selectedMonthStats.projected)}
+                </h3>
+                <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-cyan-600">
+                  <span className="text-[8px] font-black uppercase tracking-widest">Incluye Pendientes MS</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

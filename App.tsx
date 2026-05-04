@@ -61,13 +61,16 @@ const App: React.FC = () => {
   const [quoteFilterStatus, setQuoteFilterStatus] = useState<string>('todos');
   const [remitoFilterStatus, setRemitoFilterStatus] = useState<string>('all');
   const [remitoProductionFilterStatus, setRemitoProductionFilterStatus] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string | null>(null);
 
   const handleNavigate = (tab: string, filters?: any) => {
     setActiveTab(tab);
+    setFilterMonth(null);
     if (filters) {
       if (filters.quoteStatus) setQuoteFilterStatus(filters.quoteStatus);
       if (filters.remitoStatus) setRemitoFilterStatus(filters.remitoStatus);
       if (filters.remitoProdStatus) setRemitoProductionFilterStatus(filters.remitoProdStatus);
+      if (filters.month) setFilterMonth(filters.month);
     }
   };
   const [stock, setStock] = useState<StockItem[]>([]);
@@ -470,6 +473,7 @@ const App: React.FC = () => {
             suppliers={suppliers}
             onUpdate={handleUpdateExpense}
             onDelete={handleDeleteExpense}
+            initialFilterMonth={filterMonth}
           />
         )}
 
@@ -492,6 +496,7 @@ const App: React.FC = () => {
             initialCustomerId={remitoFilterCustomerId}
             initialStatusFilter={remitoFilterStatus}
             initialProductionStatusFilter={remitoProductionFilterStatus}
+            initialFilterMonth={filterMonth}
             onCreateCustomer={handleUpdateCustomer}
           />
         )}

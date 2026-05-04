@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        '__BUILD_TIME__': JSON.stringify(buildTime)
+        '__BUILD_TIME__': mode === 'development' ? '"dev"' : JSON.stringify(buildTime)
       },
       resolve: {
         alias: {
