@@ -169,17 +169,6 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
     const selectedMonthIncome = monthlyIncome[selectedMonthKey] || 0;
     const selectedMonthExpenses = monthlyExpenses[selectedMonthKey] || 0;
 
-    let selectedMonthPending = 0;
-    remitos.forEach(r => {
-      const monthKey = format(safeParseISO(r.date), 'yyyy-MM');
-      if (!r.isDraft && monthKey === selectedMonthKey) {
-        const pending = r.total - (r.amountPaid || 0);
-        if (pending > 0) {
-          selectedMonthPending += pending;
-        }
-      }
-    });
-
     const currentMonthIncome = monthlyIncome[format(new Date(), 'yyyy-MM')] || 0;
     const currentMonthExpenses = monthlyExpenses[format(new Date(), 'yyyy-MM')] || 0;
 
@@ -187,7 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
       income: selectedMonthIncome,
       expenses: selectedMonthExpenses,
       balance: selectedMonthIncome - selectedMonthExpenses,
-      projected: (selectedMonthIncome - selectedMonthExpenses) + selectedMonthPending
+      projected: (selectedMonthIncome - selectedMonthExpenses) + ventasStats.totalPending
     };
 
     return {
@@ -337,17 +326,14 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
 
           <button 
             onClick={() => onNavigateAction('remitos', { remitoStatus: 'Deudores' })}
-            className="text-left bg-slate-950 p-6 rounded-[2rem] shadow-sm hover:shadow-lg overflow-hidden relative group cursor-pointer active:scale-[0.98]"
+            className="text-left bg-orange-500 p-6 rounded-[2rem] shadow-sm hover:shadow-lg hover:bg-orange-600 transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600 rounded-full -mr-12 -mt-12 blur-2xl opacity-20"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full -mr-16 -mt-16 blur-2xl"></div>
             <div className="flex flex-col h-full relative z-10">
-              <div className="w-10 h-10 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-4 border border-white/10 text-amber-500">
-                <Clock size={20} />
-              </div>
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Pendiente Cobro</span>
-              <h3 className="text-xl font-black text-white tracking-tight">{formatCurrency(stats.totalPending)}</h3>
-              <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-amber-500">
-                <span className="text-[8px] font-black uppercase tracking-widest group-hover:text-amber-400 transition-colors">Ver pendientes</span>
+              <span className="text-[9px] font-black text-orange-100 uppercase tracking-widest mb-1">Pendiente Cobro</span>
+              <h3 className="text-3xl font-black text-white tracking-tight">{formatCurrency(stats.totalPending)}</h3>
+              <div className="mt-4 pt-4 border-t border-orange-400/50 flex items-center justify-between text-white">
+                <span className="text-[8px] font-black uppercase tracking-widest">Ver pendientes</span>
                 <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </div>
             </div>
@@ -435,7 +421,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <Wallet className="text-emerald-500" /> Balance Financiero 
+            <Wallet className="text-emerald-500" /> Balance Financiero Mensual
             <select 
               value={selectedMonthKey}
               onChange={(e) => setSelectedMonthKey(e.target.value)}
@@ -512,7 +498,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
                   {formatCurrency(stats.selectedMonthStats.projected)}
                 </h3>
                 <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-cyan-600">
-                  <span className="text-[8px] font-black uppercase tracking-widest">Incluye Pendientes MS</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest">Incluye todo lo pendiente</span>
                 </div>
               </div>
             </div>
