@@ -2,8 +2,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Remito, Expense, Quote } from '../types';
 import { 
-  BarChart, 
+  ComposedChart, 
   Bar, 
+  Line,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -138,6 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
       name: format(safeParseISO(`${key}-01`), 'MMM', { locale: es }).toUpperCase(),
       cobros: income,
       gastos: monthlyExpenses[key] || 0,
+      balance: income - (monthlyExpenses[key] || 0),
       rawDate: key
     })).sort((a, b) => a.rawDate.localeCompare(b.rawDate));
 
@@ -254,7 +256,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
           <Briefcase className="text-purple-600" /> Ventas
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button 
             onClick={() => onNavigateAction('remitos', { remitoProdStatus: 'En Producción' })}
             className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
@@ -299,6 +301,24 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               </div>
             </div>
           </button>
+
+          <button 
+            onClick={() => onNavigateAction('remitos', { remitoStatus: 'Deudores' })}
+            className="text-left bg-slate-950 p-6 rounded-[2rem] shadow-sm hover:shadow-lg overflow-hidden relative group cursor-pointer active:scale-[0.98]"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600 rounded-full -mr-12 -mt-12 blur-2xl opacity-20"></div>
+            <div className="flex flex-col h-full relative z-10">
+              <div className="w-10 h-10 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-4 border border-white/10 text-amber-500">
+                <Clock size={20} />
+              </div>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Pendiente Cobro</span>
+              <h3 className="text-xl font-black text-white tracking-tight">{formatCurrency(stats.totalPending)}</h3>
+              <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-amber-500">
+                <span className="text-[8px] font-black uppercase tracking-widest group-hover:text-amber-400 transition-colors">Ver pendientes</span>
+                <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -307,7 +327,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
           <Wallet className="text-emerald-600" /> Balance Financiero
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button 
             onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros' })}
             className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
@@ -359,32 +379,6 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Balance Proyectado */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-          <LineChart className="text-cyan-600" /> Balance Proyectado
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <button 
-            onClick={() => onNavigateAction('remitos', { remitoStatus: 'Deudores' })}
-            className="text-left bg-slate-950 p-6 rounded-[2rem] shadow-sm hover:shadow-lg overflow-hidden relative group cursor-pointer active:scale-[0.98]"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-600 rounded-full -mr-12 -mt-12 blur-2xl opacity-20"></div>
-            <div className="flex flex-col h-full relative z-10">
-              <div className="w-10 h-10 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-4 border border-white/10 text-amber-500">
-                <Clock size={20} />
-              </div>
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Pendiente Cobro</span>
-              <h3 className="text-xl font-black text-white tracking-tight">{formatCurrency(stats.totalPending)}</h3>
-              <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-amber-500">
-                <span className="text-[8px] font-black uppercase tracking-widest group-hover:text-amber-400 transition-colors">Ver pendientes</span>
-                <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </div>
-            </div>
-          </button>
 
           <div className="bg-white p-6 rounded-[2rem] border border-cyan-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -420,13 +414,17 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               <span className="w-2 h-2 bg-slate-400 rounded-full"></span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Gastos</span>
             </div>
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+              <span className="w-2 h-2 bg-cyan-600 rounded-full"></span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Balance</span>
+            </div>
           </div>
         </div>
 
         <div className="h-[350px] w-full min-h-[350px]">
           {isMounted ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 0 }}>
+              <ComposedChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
@@ -467,7 +465,16 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
                   radius={[6, 6, 0, 0]} 
                   barSize={20}
                 />
-              </BarChart>
+                <Line 
+                  type="monotone" 
+                  dataKey="balance" 
+                  name="BALANCE"
+                  stroke="#0891b2"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: '#0891b2', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6 }}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
