@@ -520,17 +520,19 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
               >
                 Cancelar
               </button>
-              <button 
-                onClick={() => handleSave(true)}
-                className="flex-[1.5] flex items-center justify-center gap-2 bg-slate-100 text-slate-600 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
-              >
-                <Save size={16} /> Borrador
-              </button>
+              {!(remitos.some(r => r.id === newRemito.id) && !newRemito.isDraft) && (
+                <button 
+                  onClick={() => handleSave(true)}
+                  className="flex-[1.5] flex items-center justify-center gap-2 bg-slate-100 text-slate-600 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200"
+                >
+                  <Save size={16} /> Borrador
+                </button>
+              )}
               <button 
                 onClick={() => handleSave(false)}
                 className="flex-2 flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
               >
-                <CheckCircle size={16} /> Emitir Venta
+                <CheckCircle size={16} /> {(remitos.some(r => r.id === newRemito.id) && !newRemito.isDraft) ? 'Guardar Venta' : 'Emitir Venta'}
               </button>
             </div>
           </div>
@@ -866,7 +868,7 @@ const RemitoRow: React.FC<RemitoRowProps> = ({ remito, onGeneratePDF, onRegister
         </div>
 
         {/* Actions */}
-        <div className="col-span-12 md:col-span-8 lg:col-span-3 flex justify-end items-center gap-1 flex-wrap lg:flex-nowrap">
+        <div className="col-span-12 md:col-span-8 lg:col-span-3 flex justify-end items-center gap-1 flex-wrap">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}

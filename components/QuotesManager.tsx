@@ -810,7 +810,7 @@ const QuoteRow: React.FC<QuoteRowProps> = ({ quote, onGeneratePDF, onEdit, onDel
         </div>
 
         {/* Actions */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 flex justify-end items-center gap-1 flex-wrap lg:flex-nowrap">
+        <div className="col-span-12 md:col-span-6 lg:col-span-4 flex justify-end items-center gap-1 flex-wrap">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-2 rounded-xl transition-all ${isExpanded ? 'bg-orange-600 text-white' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'}`}
