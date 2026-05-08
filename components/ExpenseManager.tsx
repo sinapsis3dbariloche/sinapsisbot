@@ -11,13 +11,14 @@ interface ExpenseManagerProps {
   onUpdate: (expense: Expense) => void;
   onDelete: (id: string) => void;
   initialFilterMonth?: string | null;
+  initialIncludeDrafts?: boolean;
 }
 
-const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete, initialFilterMonth }) => {
+const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, onUpdate, onDelete, initialFilterMonth, initialIncludeDrafts = true }) => {
   const { user } = useAuth();
   const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(true);
+  const [filterIncludeDrafts, setFilterIncludeDrafts] = useState(initialIncludeDrafts);
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
 

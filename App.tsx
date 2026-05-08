@@ -57,20 +57,36 @@ import { NewVersionToast } from './components/NewVersionToast';
 const App: React.FC = () => {
   const { user, loading, isAdmin, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [navKey, setNavKey] = useState(0);
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
   const [quoteFilterStatus, setQuoteFilterStatus] = useState<string>('todos');
   const [remitoFilterStatus, setRemitoFilterStatus] = useState<string>('all');
   const [remitoProductionFilterStatus, setRemitoProductionFilterStatus] = useState<string>('all');
+  const [remitoDraftFilter, setRemitoDraftFilter] = useState<string>('all');
+  const [expenseIncludeDrafts, setExpenseIncludeDrafts] = useState<boolean>(true);
   const [filterMonth, setFilterMonth] = useState<string | null>(null);
 
   const handleNavigate = (tab: string, filters?: any) => {
     setActiveTab(tab);
+    setNavKey(prev => prev + 1);
+    
+    // Reset all filters to default
     setFilterMonth(null);
+    setRemitoFilterCustomerId(null);
+    setQuoteFilterStatus('todos');
+    setRemitoFilterStatus('all');
+    setRemitoProductionFilterStatus('all');
+    setRemitoDraftFilter('all');
+    setExpenseIncludeDrafts(true);
+
     if (filters) {
       if (filters.quoteStatus) setQuoteFilterStatus(filters.quoteStatus);
       if (filters.remitoStatus) setRemitoFilterStatus(filters.remitoStatus);
       if (filters.remitoProdStatus) setRemitoProductionFilterStatus(filters.remitoProdStatus);
       if (filters.month) setFilterMonth(filters.month);
+      if (filters.customerId) setRemitoFilterCustomerId(filters.customerId);
+      if (filters.draftFilter) setRemitoDraftFilter(filters.draftFilter);
+      if (filters.includeDrafts !== undefined) setExpenseIncludeDrafts(filters.includeDrafts);
     }
   };
   const [stock, setStock] = useState<StockItem[]>([]);
@@ -430,6 +446,7 @@ const App: React.FC = () => {
 
         {activeTab === 'quotes' && (
           <QuotesManager 
+            key={navKey}
             quotes={quotes}
             customers={customers}
             onUpdate={handleUpdateQuote}
@@ -441,9 +458,8 @@ const App: React.FC = () => {
             onViewRemito={(remitoId) => {
               const remito = remitos.find(r => r.id === remitoId);
               if (remito) {
-                setRemitoFilterCustomerId(remito.customerId);
+                handleNavigate('remitos', { customerId: remito.customerId });
               }
-              setActiveTab('remitos');
             }}
           />
         )}
@@ -469,11 +485,13 @@ const App: React.FC = () => {
 
         {activeTab === 'expenses' && (
           <ExpenseManager 
+            key={navKey}
             expenses={expenses}
             suppliers={suppliers}
             onUpdate={handleUpdateExpense}
             onDelete={handleDeleteExpense}
             initialFilterMonth={filterMonth}
+            initialIncludeDrafts={expenseIncludeDrafts}
           />
         )}
 
@@ -488,6 +506,7 @@ const App: React.FC = () => {
 
         {activeTab === 'remitos' && (
           <RemitosManager 
+            key={navKey}
             remitos={remitos}
             customers={customers}
             onUpdate={handleUpdateRemito}
@@ -496,6 +515,7 @@ const App: React.FC = () => {
             initialCustomerId={remitoFilterCustomerId}
             initialStatusFilter={remitoFilterStatus}
             initialProductionStatusFilter={remitoProductionFilterStatus}
+            initialDraftFilter={remitoDraftFilter}
             initialFilterMonth={filterMonth}
             onCreateCustomer={handleUpdateCustomer}
           />

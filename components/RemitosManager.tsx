@@ -23,12 +23,13 @@ interface RemitosManagerProps {
   initialCustomerId?: string | null;
   initialStatusFilter?: string;
   initialProductionStatusFilter?: string;
+  initialDraftFilter?: string;
   initialFilterMonth?: string | null;
   onCreateCustomer?: (customer: Customer) => void;
 }
 
 const RemitosManager: React.FC<RemitosManagerProps> = ({ 
-  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, initialProductionStatusFilter, initialFilterMonth, onCreateCustomer
+  remitos, customers, onUpdate, onDelete, getNextNumber, initialCustomerId, initialStatusFilter, initialProductionStatusFilter, initialDraftFilter, initialFilterMonth, onCreateCustomer
 }) => {
   const { user } = useAuth();
   const userName = user?.displayName || user?.email || (user as any)?.uid || 'Usuario';
@@ -37,7 +38,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
   const [filterCustomer, setFilterCustomer] = useState(initialCustomerId || '');
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter || 'all');
   const [productionStatusFilter, setProductionStatusFilter] = useState(initialProductionStatusFilter || 'all');
-  const [draftFilter, setDraftFilter] = useState('all');
+  const [draftFilter, setDraftFilter] = useState(initialDraftFilter || 'all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [showHistoryModal, setShowHistoryModal] = useState(false);

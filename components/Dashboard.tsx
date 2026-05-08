@@ -325,7 +325,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
           </button>
 
           <button 
-            onClick={() => onNavigateAction('remitos', { remitoStatus: 'Deudores' })}
+            onClick={() => onNavigateAction('remitos', { remitoStatus: 'Deudores', draftFilter: 'Emitido' })}
             className="text-left bg-orange-500 p-6 rounded-[2rem] shadow-sm hover:shadow-lg hover:bg-orange-600 transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full -mr-16 -mt-16 blur-2xl"></div>
@@ -348,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button 
-            onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros' })}
+            onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros', draftFilter: 'Emitido' })}
             className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
           >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -366,7 +366,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
           </button>
 
           <button 
-            onClick={() => onNavigateAction('expenses')}
+            onClick={() => onNavigateAction('expenses', { includeDrafts: false })}
             className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
           >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -435,7 +435,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button 
-            onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros', month: selectedMonthKey })}
+            onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros', month: selectedMonthKey, draftFilter: 'Emitido' })}
             className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
           >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -453,7 +453,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
           </button>
 
           <button 
-            onClick={() => onNavigateAction('expenses', { month: selectedMonthKey })}
+            onClick={() => onNavigateAction('expenses', { month: selectedMonthKey, includeDrafts: false })}
             className="text-left bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-pointer active:scale-[0.98]"
           >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
