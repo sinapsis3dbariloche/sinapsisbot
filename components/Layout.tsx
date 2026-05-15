@@ -1,5 +1,5 @@
 
-import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag, Globe, Instagram, Box, Hexagon } from 'lucide-react';
+import { Package, Calculator, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Tag, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 
@@ -11,6 +11,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const { logout, user } = useAuth();
 
   const versionString = React.useMemo(() => {
@@ -48,39 +49,60 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 border-r border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex flex-col h-full">
-          <div className="p-8 border-b border-slate-900">
+      <aside className={`fixed inset-y-0 left-0 z-50 ${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-slate-950 border-r border-slate-800 transition-all duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          className="hidden lg:flex absolute -right-3 top-6 bg-slate-800 text-slate-400 p-1 rounded-full border border-slate-700 hover:text-white hover:bg-slate-700 z-50 transition-colors"
+        >
+          {isSidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+
+        <div className="flex flex-col h-full bg-slate-950 relative z-10">
+          <div className={`p-4 border-b border-slate-900 transition-all duration-300 ${isSidebarCollapsed ? 'px-2' : 'px-6'}`}>
             <div className="flex flex-col items-center">
               <button 
                 onClick={() => setActiveTab('dashboard')} 
                 className="text-center cursor-pointer hover:opacity-80 transition-opacity focus:outline-none flex flex-col items-center"
               >
-                <h1 className="text-2xl font-black text-white leading-tight tracking-tighter uppercase italic">SINASOFT</h1>
-                <p className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.4em] mt-1 opacity-80">Gestión</p>
-                <div className="mt-3 bg-slate-900 border border-slate-800 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest text-[8px] font-black">
-                  {versionString}
-                </div>
+                {isSidebarCollapsed ? (
+                  <h1 className="text-xl font-black text-white leading-tight tracking-tighter uppercase italic">S</h1>
+                ) : (
+                  <>
+                    <h1 className="text-2xl font-black text-white leading-tight tracking-tighter uppercase italic">SINASOFT</h1>
+                    <p className="text-[10px] text-orange-500 font-bold uppercase tracking-[0.4em] mt-1 opacity-80">Gestión</p>
+                    <div className="mt-2 bg-slate-900 border border-slate-800 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest text-[8px] font-black">
+                      {versionString}
+                    </div>
+                  </>
+                )}
               </button>
               
-              <div className="flex gap-4 mt-6 text-slate-400">
-                <a href="https://www.sinapsis3dbariloche.com.ar/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Sitio Web">
-                  <Globe size={18} />
-                </a>
-                <a href="https://www.instagram.com/sinapsis3dbariloche/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Instagram">
-                  <Instagram size={18} />
-                </a>
-                <a href="https://makerworld.com/es/@sinapsis3d" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="MakerWorld">
-                  <Box size={18} />
-                </a>
-                <a href="https://cults3d.com/es/usuarios/Sinapsis3D" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Cults3D">
-                  <Hexagon size={18} />
-                </a>
-              </div>
+              {!isSidebarCollapsed ? (
+                <div className="flex gap-3 mt-4 text-slate-400">
+                  <a href="https://www.sinapsis3dbariloche.com.ar/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Sitio Web">
+                    <Globe size={16} />
+                  </a>
+                  <a href="https://www.instagram.com/sinapsis3dbariloche/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Instagram">
+                    <Instagram size={16} />
+                  </a>
+                  <a href="https://makerworld.com/es/@sinapsis3d" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="MakerWorld">
+                    <Box size={16} />
+                  </a>
+                  <a href="https://cults3d.com/es/usuarios/Sinapsis3D" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Cults3D">
+                    <Hexagon size={16} />
+                  </a>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 mt-4 text-slate-400 items-center">
+                  <a href="https://www.sinapsis3dbariloche.com.ar/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" title="Sitio Web">
+                    <Globe size={14} />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
-          <nav className="flex-1 px-6 space-y-2 mt-8 overflow-y-auto scrollbar-hide py-4">
+          <nav className="flex-1 px-3 space-y-1 mt-2 overflow-y-auto scrollbar-hide py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isSub = item.isSubItem;
@@ -91,37 +113,41 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                     setActiveTab(item.id);
                     setIsSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-4 py-4 rounded-[1.25rem] font-black uppercase tracking-widest transition-all duration-300 shrink-0 ${isSub ? 'pl-10 text-[9px] opacity-70' : 'px-6 text-[11px]'} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-2xl shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
+                  title={isSidebarCollapsed ? item.label : undefined}
+                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} py-3 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 shrink-0 ${isSidebarCollapsed ? 'px-0' : (isSub ? 'pl-8 text-[9px] opacity-70' : 'px-4 text-[11px]')} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
                 >
-                  <Icon size={isSub ? 14 : 18} />
-                  {item.label}
+                  <Icon size={isSub && !isSidebarCollapsed ? 14 : 18} />
+                  {!isSidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
             })}
           </nav>
 
-          <div className="p-6 space-y-4">
+          <div className={`p-4 space-y-4 border-t border-slate-900 ${isSidebarCollapsed ? 'flex flex-col items-center' : ''}`}>
             {user && (
-              <div className="bg-slate-900/50 rounded-[2rem] p-4 border border-slate-800 flex items-center gap-4 overflow-hidden">
+              <div className={`bg-slate-900/50 rounded-2xl ${isSidebarCollapsed ? 'p-2' : 'p-3'} border border-slate-800 flex items-center gap-3 overflow-hidden w-full ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                 <img 
                   src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}`} 
                   alt="Avatar" 
-                  className="w-10 h-10 rounded-xl"
+                  className={`${isSidebarCollapsed ? 'w-8 h-8 rounded-lg' : 'w-9 h-9 rounded-xl shrink-0'}`}
                   referrerPolicy="no-referrer"
                 />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest truncate">{user.displayName || 'Admin'}</span>
-                  <span className="text-[8px] text-slate-500 font-bold uppercase truncate">{user.email}</span>
-                </div>
+                {!isSidebarCollapsed && (
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest truncate">{user.displayName || 'Admin'}</span>
+                    <span className="text-[8px] text-slate-500 font-bold uppercase truncate">{user.email}</span>
+                  </div>
+                )}
               </div>
             )}
             
             <button 
               onClick={logout}
-              className="w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] font-black uppercase tracking-widest text-[11px] text-red-500 hover:bg-red-500/10 transition-all duration-300"
+              title={isSidebarCollapsed ? "Cerrar Sesión" : undefined}
+              className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} ${isSidebarCollapsed ? 'p-3' : 'px-4 py-3'} rounded-2xl font-black uppercase tracking-widest text-[11px] text-red-500 hover:bg-red-500/10 transition-all duration-300`}
             >
               <LogOut size={18} />
-              Cerrar Sesión
+              {!isSidebarCollapsed && <span>Cerrar Sesión</span>}
             </button>
           </div>
         </div>
