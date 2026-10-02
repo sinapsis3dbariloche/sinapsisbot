@@ -234,7 +234,7 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, balanc
         <div className="flex items-center gap-3 bg-slate-50 px-5 py-3 rounded-2xl border border-slate-100 relative z-10">
           <Calendar className="text-orange-600" size={18} />
           <span className="text-[11px] font-black uppercase tracking-widest text-slate-600">
-            {format(new Date(), "EEEE, d 'de' MMMM", { locale: es })}
+            {format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
           </span>
         </div>
       </div>
