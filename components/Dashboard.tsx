@@ -623,15 +623,15 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, balanc
           </div>
           <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl border border-slate-100">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Cobros</span>
             </div>
             <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
-              <span className="w-2 h-2 bg-slate-400 rounded-full"></span>
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Gastos</span>
             </div>
             <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
-              <span className="w-2 h-2 bg-cyan-600 rounded-full"></span>
+              <span className="w-2 h-2 bg-slate-900 rounded-full"></span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Balance</span>
             </div>
           </div>
@@ -670,14 +670,14 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, balanc
                 <Bar 
                   dataKey="cobros" 
                   name="COBROS"
-                  fill="#f97316"
+                  fill="#10b981"
                   radius={[6, 6, 0, 0]} 
                   barSize={20}
                 />
                 <Bar 
                   dataKey="gastos" 
                   name="GASTOS"
-                  fill="#94a3b8"
+                  fill="#ef4444"
                   radius={[6, 6, 0, 0]} 
                   barSize={20}
                 />
@@ -685,9 +685,9 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, balanc
                   type="monotone" 
                   dataKey="balance" 
                   name="BALANCE"
-                  stroke="#0891b2"
+                  stroke="#0f172a"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: '#0891b2', strokeWidth: 2, stroke: '#fff' }}
+                  dot={{ r: 4, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }}
                   activeDot={{ r: 6 }}
                 />
               </ComposedChart>
