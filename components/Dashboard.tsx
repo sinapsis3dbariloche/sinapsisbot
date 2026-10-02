@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Remito, Expense, Quote } from '../types';
+import { Remito, Expense, Quote, BalanceClosing } from '../types';
 import { 
   ComposedChart, 
   Bar, 
@@ -27,15 +27,18 @@ import {
   Award,
   AlertCircle,
   FileText,
-  LineChart
+  LineChart,
+  Scale
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, subMonths, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { calculateDashboardFinancials } from '../services/balanceCalculator';
 
 interface DashboardProps {
   remitos: Remito[];
   expenses: Expense[];
   quotes: Quote[];
+  balanceClosings?: BalanceClosing[];
   onNavigateAction: (tab: string, filters?: any) => void;
 }
 
@@ -48,13 +51,29 @@ const safeParseISO = (dateStr: string | undefined | null) => {
   }
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavigateAction }) => {
+const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, balanceClosings = [], onNavigateAction }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [selectedMonthKey, setSelectedMonthKey] = useState(format(new Date(), 'yyyy-MM'));
+  const [viewScope, setViewScope] = useState<'cycle' | 'all'>('cycle');
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const latestClosing = useMemo(() => {
+    if (!balanceClosings || balanceClosings.length === 0) return null;
+    return [...balanceClosings].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0];
+  }, [balanceClosings]);
+
+  const cycleFinancials = useMemo(() => {
+    return calculateDashboardFinancials({
+      remitos,
+      expenses,
+      quotes,
+      lastClosingDate: latestClosing?.endDate || null,
+      isAllTime: viewScope === 'all' || !latestClosing
+    });
+  }, [remitos, expenses, quotes, latestClosing, viewScope]);
 
   const stats = useMemo(() => {
     const quotesStats = { borrador: 0, presupuestado: 0, confirmado: 0 };
@@ -343,9 +362,82 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
 
       {/* Financieros */}
       <div className="space-y-4">
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-          <Wallet className="text-emerald-600" /> Balance Financiero (Histórico)
-        </h2>
+        {/* Cycle Banner if closed balances exist */}
+        {latestClosing && (
+          <div className="bg-slate-900 text-white p-5 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-800 shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 rounded-2xl bg-orange-600/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                <Scale size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black uppercase tracking-wider text-orange-400">
+                    {viewScope === 'cycle' ? 'Período en Curso' : 'Vista Histórica Total'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">
+                    Último cierre: {latestClosing.name} ({latestClosing.endDate})
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {viewScope === 'cycle' ? (
+                    <>Caja inicial de este período: <strong>$0.00</strong> • Último balance liquidado: <strong className={latestClosing.netResult >= 0 ? 'text-emerald-400' : 'text-red-400'}>{formatCurrency(latestClosing.netResult)}</strong> ({latestClosing.resultType === 'PROFIT' ? 'Ganancia' : 'Pérdida'})</>
+                  ) : (
+                    <>Mostrando el consolidado de cobros y gastos de todos los períodos históricos.</>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0 relative z-10">
+              <div className="bg-slate-800 p-1 rounded-xl flex text-[10px] font-black uppercase tracking-wider border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setViewScope('cycle')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    viewScope === 'cycle'
+                      ? 'bg-orange-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Período Actual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewScope('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    viewScope === 'all'
+                      ? 'bg-orange-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Histórico Total
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onNavigateAction('balances')}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Scale size={13} className="text-orange-400" />
+                Balances
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+            <Wallet className="text-emerald-600" /> Balance Financiero {viewScope === 'cycle' && latestClosing ? '(Período Actual)' : '(Histórico Total)'}
+          </h2>
+          {latestClosing && viewScope === 'cycle' && (
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+              Caja Inicial: $0
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button 
             onClick={() => onNavigateAction('remitos', { remitoStatus: 'ConCobros', draftFilter: 'Emitido' })}
@@ -356,8 +448,12 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               <div className="w-10 h-10 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-4">
                 <TrendingUp size={20} />
               </div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Cobros Totales</span>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalCollected)}</h3>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                {viewScope === 'cycle' && latestClosing ? 'Cobros del Período' : 'Cobros Totales'}
+              </span>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                {formatCurrency(viewScope === 'cycle' && latestClosing ? cycleFinancials.totalCollected : stats.totalCollected)}
+              </h3>
               <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-green-500">
                 <span className="text-[8px] font-black uppercase tracking-widest">Ver cobros</span>
                 <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -374,8 +470,12 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               <div className="w-10 h-10 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-4">
                 <TrendingDown size={20} />
               </div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gastos Totales</span>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalExpenses)}</h3>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                {viewScope === 'cycle' && latestClosing ? 'Gastos del Período' : 'Gastos Totales'}
+              </span>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                {formatCurrency(viewScope === 'cycle' && latestClosing ? cycleFinancials.totalExpenses : stats.totalExpenses)}
+              </h3>
               <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-red-500">
                 <span className="text-[8px] font-black uppercase tracking-widest">Ver gastos</span>
                 <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -389,12 +489,18 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
               <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
                 <Wallet size={20} />
               </div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Balance Neto</span>
-              <h3 className={`text-xl font-black tracking-tight ${stats.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {formatCurrency(stats.balance)}
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                {viewScope === 'cycle' && latestClosing ? 'Saldo de Caja Actual' : 'Balance Neto'}
+              </span>
+              <h3 className={`text-xl font-black tracking-tight ${
+                (viewScope === 'cycle' && latestClosing ? cycleFinancials.balance : stats.balance) >= 0 ? 'text-emerald-600' : 'text-red-600'
+              }`}>
+                {formatCurrency(viewScope === 'cycle' && latestClosing ? cycleFinancials.balance : stats.balance)}
               </h3>
               <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-slate-400">
-                <span className="text-[8px] font-black uppercase tracking-widest">Gastos - Cobros</span>
+                <span className="text-[8px] font-black uppercase tracking-widest">
+                  {viewScope === 'cycle' && latestClosing ? 'Inició en $0' : 'Gastos - Cobros'}
+                </span>
               </div>
             </div>
           </div>
@@ -406,8 +512,10 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
                 <LineChart size={20} />
               </div>
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Balance Proyect.</span>
-              <h3 className={`text-xl font-black tracking-tight ${(stats.balance + stats.totalPending) >= 0 ? 'text-teal-600' : 'text-red-600'}`}>
-                {formatCurrency(stats.balance + stats.totalPending)}
+              <h3 className={`text-xl font-black tracking-tight ${
+                ((viewScope === 'cycle' && latestClosing ? cycleFinancials.balance : stats.balance) + stats.totalPending) >= 0 ? 'text-teal-600' : 'text-red-600'
+              }`}>
+                {formatCurrency((viewScope === 'cycle' && latestClosing ? cycleFinancials.balance : stats.balance) + stats.totalPending)}
               </h3>
               <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between text-cyan-600">
                 <span className="text-[8px] font-black uppercase tracking-widest">Incluye Pendientes</span>
@@ -529,9 +637,9 @@ const Dashboard: React.FC<DashboardProps> = ({ remitos, expenses, quotes, onNavi
           </div>
         </div>
 
-        <div className="h-[350px] w-full min-h-[350px]">
+        <div className="w-full min-w-0 h-[350px]" style={{ width: '100%', height: 350, minWidth: 0, minHeight: 350 }}>
           {isMounted ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={350}>
               <ComposedChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 

@@ -85,7 +85,7 @@ export interface Quote {
   date: string;
   items: QuoteItem[];
   total: number;
-  status?: 'borrador' | 'presupuestado' | 'confirmado';
+  status?: 'borrador' | 'presupuestado' | 'confirmado' | 'rechazado';
   convertedRemitoId?: string;
   confirmedAt?: string;
   notes?: string;
@@ -170,3 +170,36 @@ export interface ChatMessage {
   text: string;
   timestamp: Date;
 }
+
+export interface DebtorSummary {
+  customerId: string;
+  customerName: string;
+  debt: number;
+}
+
+export interface BalanceClosing {
+  id: string;
+  name: string; // e.g., "Ejercicio Anual 2025" or "Cierre Septiembre 2026"
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  closedAt: string; // ISO string
+  closedBy: string; // User email
+  
+  // Financial Result (Liquidated to 0 for next period)
+  totalIncome: number; // Real payments collected within period
+  totalExpenses: number; // Expenses paid within period
+  netResult: number; // totalIncome - totalExpenses
+  resultType: 'PROFIT' | 'LOSS' | 'BREAKEVEN';
+  
+  // Operational metrics
+  totalBilled: number; // Emitted remitos in period
+  remitosCount: number; // Count of remitos in period
+  expensesCount: number; // Count of expenses in period
+
+  // Open accounts receivable that pass to the new cycle
+  pendingReceivablesAtClose: number;
+  debtorsSummary: DebtorSummary[];
+
+  notes?: string;
+}
+

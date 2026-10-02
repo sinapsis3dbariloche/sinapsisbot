@@ -1,7 +1,7 @@
 
 import { collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../lib/firebase';
-import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from '../types';
+import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem, BalanceClosing } from '../types';
 import { INITIAL_STOCK, INITIAL_PRINTERS, INITIAL_CUSTOMERS, INITIAL_REMITOS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE, DEFAULT_HOTEND_STOCK } from '../constants';
 
 export const subscribeToQuotes = (callback: (quotes: Quote[]) => void, onError?: (error: any) => void) => {
@@ -203,6 +203,43 @@ export const subscribeToExpenses = (callback: (expenses: Expense[]) => void, onE
       if (onError) onError(error);
     }
   });
+};
+
+export const subscribeToBalanceClosings = (callback: (closings: BalanceClosing[]) => void, onError?: (error: any) => void) => {
+  return onSnapshot(collection(db, 'balance_closings'), {
+    next: (snapshot) => {
+      const closings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BalanceClosing));
+      // Sort newest end date first
+      callback(closings.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()));
+    },
+    error: (error) => {
+      try {
+        handleFirestoreError(error, 'list', 'balance_closings');
+      } catch (e) {
+        if (onError) onError(e);
+        return;
+      }
+      if (onError) onError(error);
+    }
+  });
+};
+
+export const saveBalanceClosingInDb = async (closing: BalanceClosing) => {
+  const docRef = doc(db, 'balance_closings', closing.id);
+  try {
+    await setDoc(docRef, closing, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, 'write', `balance_closings/${closing.id}`);
+  }
+};
+
+export const deleteBalanceClosingFromDb = async (id: string) => {
+  const docRef = doc(db, 'balance_closings', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    handleFirestoreError(error, 'delete', `balance_closings/${id}`);
+  }
 };
 
 export const subscribeToSettings = (callback: (settings: any) => void, onError?: (error: any) => void) => {

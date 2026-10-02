@@ -1,5 +1,5 @@
 
-import { FilamentType, StockItem, Printer } from './types';
+import { FilamentType, StockItem, Printer, Customer, Remito } from './types';
 
 const plaColorsMap: Record<string, string> = {
   "Negro": "#1a1a1a", "Blanco": "#ffffff", "Gris": "#94a3b8", "Gris claro": "#cbd5e1",

@@ -164,6 +164,29 @@
         }
       },
       "required": ["id", "description", "wholesalePrice", "retailPrice", "wholesaleMinQuantity", "createdAt"]
+    },
+    "BalanceClosing": {
+      "title": "Balance Closing",
+      "description": "Represents a closed balance snapshot for custom periods (e.g. annual exercises)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "closedAt": { "type": "string" },
+        "closedBy": { "type": "string" },
+        "totalIncome": { "type": "number" },
+        "totalExpenses": { "type": "number" },
+        "netResult": { "type": "number" },
+        "resultType": { "type": "string", "enum": ["PROFIT", "LOSS", "BREAKEVEN"] },
+        "totalBilled": { "type": "number" },
+        "remitosCount": { "type": "number" },
+        "expensesCount": { "type": "number" },
+        "pendingReceivablesAtClose": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "name", "startDate", "endDate", "closedAt", "totalIncome", "totalExpenses", "netResult", "resultType"]
     }
   },
   "firestore": {
@@ -176,6 +199,7 @@
     "/expenses": { "schema": "Expense", "description": "Business expenses" },
     "/prices": { "schema": "PriceItem", "description": "Price list" },
     "/authorized_users": { "schema": "AuthorizedUser", "description": "System access control" },
-    "/config/settings": { "schema": "Settings", "description": "Global prices and configurations" }
+    "/config/settings": { "schema": "Settings", "description": "Global prices and configurations" },
+    "/balance_closings": { "schema": "BalanceClosing", "description": "Financial balance closings and snapshots" }
   }
 }

@@ -5,15 +5,14 @@ import StockBoard from './components/StockBoard';
 import StockManager from './components/StockManager';
 import MaintenanceBoard from './components/MaintenanceBoard';
 import PrinterManager from './components/PrinterManager';
-import BudgetCalculator from './components/BudgetCalculator';
 import CustomerManager from './components/CustomerManager';
 import RemitosManager from './components/RemitosManager';
 import QuotesManager from './components/QuotesManager';
 import SupplierManager from './components/SupplierManager';
 import ExpenseManager from './components/ExpenseManager';
 import Dashboard from './components/Dashboard';
-import PricesManager from './components/PricesManager';
-import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem } from './types';
+import { BalanceManager } from './components/BalanceManager';
+import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, BalanceClosing } from './types';
 import { 
   subscribeToQuotes,
   updateQuoteInDb,
@@ -26,7 +25,9 @@ import {
   subscribeToSuppliers,
   subscribeToExpenses,
   subscribeToRemitos,
-  subscribeToPrices,
+  subscribeToBalanceClosings,
+  saveBalanceClosingInDb,
+  deleteBalanceClosingFromDb,
   updateStockItemInDb, 
   updateSettings, 
   resetAllStockInDb, 
@@ -41,12 +42,9 @@ import {
   deleteExpenseFromDb,
   updateRemitoInDb,
   deleteRemitoFromDb,
-  updatePriceInDb,
-  deletePriceFromDb,
   getNextRemitoNumber,
   initializeDatabase
 } from './services/firebaseService';
-import { DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE } from './constants';
 import { Loader2, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 import { useAuth } from './lib/AuthContext';
@@ -96,11 +94,7 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [remitos, setRemitos] = useState<Remito[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [prices, setPrices] = useState<PriceItem[]>([]);
-  const [plaPrice, setPlaPrice] = useState<number>(DEFAULT_PLA_PRICE);
-  const [petgPrice, setPetgPrice] = useState<number>(DEFAULT_PETG_PRICE);
-  const [designPrice, setDesignPrice] = useState<number>(DEFAULT_DESIGN_PRICE);
-  const [postProcessPrice, setPostProcessPrice] = useState<number>(DEFAULT_POST_PROCESS_PRICE);
+  const [balanceClosings, setBalanceClosings] = useState<BalanceClosing[]>([]);
   const [hotendStock, setHotendStock] = useState<number>(0);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSynced, setIsSynced] = useState(false);
@@ -131,10 +125,12 @@ const App: React.FC = () => {
     };
 
     const timer = setTimeout(() => {
-      if (isLoadingData) {
-        console.warn("Data sync timed out, forcing load state to false");
-        setIsLoadingData(false);
-      }
+      setIsLoadingData(prev => {
+        if (prev) {
+          console.warn("Data sync timed out, forcing load state to false");
+        }
+        return false;
+      });
     }, 8000); // 8 seconds timeout
 
     const unsubStock = subscribeToStock((newStock) => {
@@ -164,8 +160,8 @@ const App: React.FC = () => {
       setExpenses(newExpenses);
     }, handleError);
 
-    const unsubPrices = subscribeToPrices((newPrices) => {
-      setPrices(newPrices);
+    const unsubBalances = subscribeToBalanceClosings((newClosings) => {
+      setBalanceClosings(newClosings);
     }, handleError);
 
     const unsubRemitos = subscribeToRemitos((newRemitos) => {
@@ -177,10 +173,6 @@ const App: React.FC = () => {
     }, handleError);
 
     const unsubSettings = subscribeToSettings((settings) => {
-      if (settings?.plaPrice) setPlaPrice(settings.plaPrice);
-      if (settings?.petgPrice) setPetgPrice(settings.petgPrice);
-      if (settings?.designPrice) setDesignPrice(settings.designPrice);
-      if (settings?.postProcessPrice) setPostProcessPrice(settings.postProcessPrice);
       if (settings?.hotendStock !== undefined) setHotendStock(settings.hotendStock);
     }, handleError);
 
@@ -190,7 +182,7 @@ const App: React.FC = () => {
       unsubCustomers();
       unsubSuppliers();
       unsubExpenses();
-      unsubPrices();
+      unsubBalances();
       unsubRemitos();
       unsubQuotes();
       unsubSettings();
@@ -248,14 +240,6 @@ const App: React.FC = () => {
     await deleteExpenseFromDb(id);
   };
 
-  const handleUpdatePrice = async (price: PriceItem) => {
-    await updatePriceInDb(price);
-  };
-
-  const handleDeletePrice = async (id: string) => {
-    await deletePriceFromDb(id);
-  };
-
   const handleUpdateRemito = async (remito: Remito) => {
     await updateRemitoInDb(remito);
   };
@@ -307,18 +291,17 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdatePrices = async (updates: { pla?: number, petg?: number, design?: number, postProcess?: number }) => {
-    await updateSettings({ 
-      ...(updates.pla && { plaPrice: updates.pla }),
-      ...(updates.petg && { petgPrice: updates.petg }),
-      ...(updates.design && { designPrice: updates.design }),
-      ...(updates.postProcess && { postProcessPrice: updates.postProcess })
-    });
-  };
-
   const handleViewRemitosByCustomer = (id: string) => {
     setRemitoFilterCustomerId(id);
     setActiveTab('remitos');
+  };
+
+  const handleSaveBalanceClosing = async (closing: BalanceClosing) => {
+    await saveBalanceClosingInDb(closing);
+  };
+
+  const handleDeleteBalanceClosing = async (id: string) => {
+    await deleteBalanceClosingFromDb(id);
   };
 
   if (loading) {
@@ -376,7 +359,15 @@ const App: React.FC = () => {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nube OK</span>
         </div>
 
-        {activeTab === 'dashboard' && <Dashboard remitos={remitos} expenses={expenses} quotes={quotes} onNavigateAction={handleNavigate} />}
+        {activeTab === 'dashboard' && (
+          <Dashboard 
+            remitos={remitos} 
+            expenses={expenses} 
+            quotes={quotes} 
+            balanceClosings={balanceClosings}
+            onNavigateAction={handleNavigate} 
+          />
+        )}
         
         {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
         
@@ -434,16 +425,6 @@ const App: React.FC = () => {
           />
         )}
 
-        {activeTab === 'calc' && (
-          <BudgetCalculator 
-            plaPrice={plaPrice} 
-            petgPrice={petgPrice}
-            designPrice={designPrice}
-            postProcessPrice={postProcessPrice}
-            onUpdatePrices={handleUpdatePrices} 
-          />
-        )}
-
         {activeTab === 'quotes' && (
           <QuotesManager 
             key={navKey}
@@ -495,12 +476,15 @@ const App: React.FC = () => {
           />
         )}
 
-        {activeTab === 'prices' && (
-          <PricesManager 
-            prices={prices}
+        {activeTab === 'balances' && (
+          <BalanceManager 
             remitos={remitos}
-            onUpdate={handleUpdatePrice}
-            onDelete={handleDeletePrice}
+            expenses={expenses}
+            quotes={quotes}
+            balanceClosings={balanceClosings}
+            onSaveClosing={handleSaveBalanceClosing}
+            onDeleteClosing={handleDeleteBalanceClosing}
+            currentUserEmail={user?.email || 'Admin'}
           />
         )}
 

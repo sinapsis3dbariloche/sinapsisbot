@@ -100,7 +100,7 @@ const RemitosManager: React.FC<RemitosManagerProps> = ({
 
   const uniqueYears = useMemo(() => {
     const years = remitos.map(r => new Date(r.date).getFullYear());
-    return Array.from(new Set(years)).sort((a, b) => b - a);
+    return Array.from(new Set<number>(years)).sort((a: number, b: number) => b - a);
   }, [remitos]);
 
   const filteredRemitos = remitos.filter(r => {

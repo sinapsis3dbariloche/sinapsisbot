@@ -55,7 +55,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
 
   const uniqueYears = useMemo(() => {
     const years = expenses.map(e => new Date(e.date).getFullYear());
-    return Array.from(new Set(years)).sort((a, b) => b - a);
+    return Array.from(new Set<number>(years)).sort((a: number, b: number) => b - a);
   }, [expenses]);
 
   const filteredExpenses = expenses.filter(e => {

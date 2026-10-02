@@ -121,6 +121,26 @@ service cloud.firestore {
              (!('history' in data) || data.history is list);
     }
 
+    function isValidBalanceClosing(data) {
+      return data.keys().hasAll(['id', 'name', 'startDate', 'endDate', 'closedAt', 'totalIncome', 'totalExpenses', 'netResult', 'resultType']) &&
+             data.id is string &&
+             data.name is string &&
+             data.name.size() <= 200 &&
+             data.startDate is string &&
+             data.endDate is string &&
+             data.closedAt is string &&
+             data.totalIncome is number &&
+             data.totalExpenses is number &&
+             data.netResult is number &&
+             data.resultType in ['PROFIT', 'LOSS', 'BREAKEVEN'] &&
+             (!('totalBilled' in data) || data.totalBilled is number) &&
+             (!('remitosCount' in data) || data.remitosCount is number) &&
+             (!('expensesCount' in data) || data.expensesCount is number) &&
+             (!('pendingReceivablesAtClose' in data) || data.pendingReceivablesAtClose is number) &&
+             (!('debtorsSummary' in data) || data.debtorsSummary is list) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
+    }
+
     // --- Collection Routes ---
 
     match /prices/{priceId} {
@@ -191,6 +211,13 @@ service cloud.firestore {
     match /authorized_users/{userId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
+    }
+
+    match /balance_closings/{closingId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(closingId) && isValidBalanceClosing(request.resource.data);
+      allow update: if isAdmin() && isValidBalanceClosing(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }
