@@ -236,6 +236,42 @@ describe('Unsaved Changes Logic & Protection', () => {
       expect(isStockItemFormDirty({ ...origStock, hexColor: '#111111' }, origStock)).toBe(true);
       expect(isStockItemFormDirty({ ...origStock, minClosed: 4 }, origStock)).toBe(true);
     });
+
+    it('detects dirty state for new and edited Gráfica items', () => {
+      // Clean new grafica item
+      expect(isStockItemFormDirty({ category: 'grafica', name: '', minClosed: 1 }, null)).toBe(false);
+      // Dirty new grafica item by name, size, weight, package, finish, or min
+      expect(isStockItemFormDirty({ category: 'grafica', name: 'Papel Foto' }, null)).toBe(true);
+      expect(isStockItemFormDirty({ category: 'grafica', sizeFormat: 'A3' }, null)).toBe(true);
+      expect(isStockItemFormDirty({ category: 'grafica', weightThickness: '120g' }, null)).toBe(true);
+      expect(isStockItemFormDirty({ category: 'grafica', packageUnits: '50h' }, null)).toBe(true);
+      expect(isStockItemFormDirty({ category: 'grafica', finishColor: 'Mate' }, null)).toBe(true);
+      expect(isStockItemFormDirty({ category: 'grafica', minClosed: 3 }, null)).toBe(true);
+
+      // Editing existing grafica item
+      const origGrafica: StockItem = {
+        id: 'g-1',
+        category: 'grafica',
+        name: 'Papel Foto Brillante A4 200g',
+        graphicCategory: 'Papel',
+        sizeFormat: 'A4',
+        weightThickness: '200g',
+        packageUnits: '100 hojas',
+        finishColor: 'Brillante',
+        closedCount: 2,
+        openCount: 1,
+        minClosed: 2
+      };
+
+      expect(isStockItemFormDirty({ ...origGrafica }, origGrafica)).toBe(false);
+      expect(isStockItemFormDirty({ ...origGrafica, name: 'Papel Foto Brillante A4 200g X 2' }, origGrafica)).toBe(true);
+      expect(isStockItemFormDirty({ ...origGrafica, graphicCategory: 'Vinilo' }, origGrafica)).toBe(true);
+      expect(isStockItemFormDirty({ ...origGrafica, sizeFormat: 'A3' }, origGrafica)).toBe(true);
+      expect(isStockItemFormDirty({ ...origGrafica, weightThickness: '240g' }, origGrafica)).toBe(true);
+      expect(isStockItemFormDirty({ ...origGrafica, packageUnits: '50 hojas' }, origGrafica)).toBe(true);
+      expect(isStockItemFormDirty({ ...origGrafica, finishColor: 'Satinado' }, origGrafica)).toBe(true);
+      expect(isStockItemFormDirty({ ...origGrafica, minClosed: 5 }, origGrafica)).toBe(true);
+    });
   });
 
   describe('isPriceItemFormDirty', () => {

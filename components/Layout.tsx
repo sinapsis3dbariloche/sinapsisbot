@@ -1,5 +1,5 @@
 
-import { Package, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
+import { Package, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, Scale, Layers } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
@@ -35,7 +35,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
     { id: 'expenses', label: 'Gastos', icon: DollarSign },
     { id: 'suppliers', label: 'Proveedores', icon: Briefcase, isSubItem: true },
     { id: 'balances', label: 'Balances', icon: Scale },
-    { id: 'stock', label: 'Stock', icon: Package },
+    { id: 'stock-group', label: 'Stock', icon: Package, isGroup: true },
+    { id: 'stock', label: 'Filamento', icon: Box, isSubItem: true },
+    { id: 'stock-grafica', label: 'Gráfica', icon: Layers, isSubItem: true },
     { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
     { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
     { id: 'maint', label: 'Mantenimiento', icon: Wrench },
@@ -107,6 +109,23 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
             {navItems.map((item) => {
               const Icon = item.icon;
               const isSub = item.isSubItem;
+              const isGroup = (item as any).isGroup;
+
+              if (isGroup) {
+                return (
+                  <div
+                    key={item.id}
+                    title={isSidebarCollapsed ? item.label : undefined}
+                    className={`w-full flex items-center ${
+                      isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-4 py-2 pt-3'
+                    } font-black uppercase tracking-widest text-[11px] text-slate-300 select-none cursor-default shrink-0`}
+                  >
+                    <Icon size={18} className="text-orange-500" />
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
+                  </div>
+                );
+              }
+
               return (
                 <button
                   key={item.id}

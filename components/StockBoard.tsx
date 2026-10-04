@@ -29,8 +29,8 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
   };
 
   const filteredStock = stock
-    .filter(item => item.type === activeType)
-    .filter(item => item.color.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(item => (!item.category || item.category === '3d') && item.type === activeType)
+    .filter(item => (item.color || '').toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
       const aAlert = checkAlert(a);
       const bAlert = checkAlert(b);
@@ -72,8 +72,8 @@ const StockBoard: React.FC<StockBoardProps> = ({ stock, onUpdateStock }) => {
             <Layers size={20} />
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter leading-none">Control de Stock</h2>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sinapsis 3D Bariloche</p>
+            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter leading-none">Stock Filamentos 3D</h2>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">PLA y PET-G • Sinapsis 3D</p>
           </div>
         </div>
         

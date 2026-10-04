@@ -2,7 +2,7 @@
 import { collection, onSnapshot, doc, setDoc, writeBatch, getDocs, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../lib/firebase';
 import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, PriceItem, BalanceClosing } from '../types';
-import { INITIAL_STOCK, INITIAL_PRINTERS, INITIAL_CUSTOMERS, INITIAL_REMITOS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE, DEFAULT_HOTEND_STOCK } from '../constants';
+import { INITIAL_STOCK, INITIAL_GRAPHIC_STOCK, INITIAL_PRINTERS, INITIAL_CUSTOMERS, INITIAL_REMITOS, DEFAULT_PLA_PRICE, DEFAULT_PETG_PRICE, DEFAULT_DESIGN_PRICE, DEFAULT_POST_PROCESS_PRICE, DEFAULT_HOTEND_STOCK } from '../constants';
 
 export const subscribeToQuotes = (callback: (quotes: Quote[]) => void, onError?: (error: any) => void) => {
   return onSnapshot(collection(db, 'quotes'), {
@@ -401,13 +401,23 @@ export const getNextRemitoNumber = async () => {
   }
 };
 
-export const resetAllStockInDb = async () => {
+export const resetAllStockInDb = async (targetCategory: 'all' | '3d' | 'grafica' = 'all') => {
   try {
     const batch = writeBatch(db);
     const snapshot = await getDocs(collection(db, 'stock'));
     snapshot.docs.forEach(document => {
-      const ref = doc(db, 'stock', document.id);
-      batch.update(ref, { closedCount: 0, openCount: 0 });
+      const data = document.data() as Partial<StockItem>;
+      const is3d = !data.category || data.category === '3d';
+      const isGrafica = data.category === 'grafica';
+      const shouldReset = 
+        targetCategory === 'all' ||
+        (targetCategory === '3d' && is3d) ||
+        (targetCategory === 'grafica' && isGrafica);
+
+      if (shouldReset) {
+        const ref = doc(db, 'stock', document.id);
+        batch.update(ref, { closedCount: 0, openCount: 0 });
+      }
     });
     await batch.commit();
   } catch (error) {
@@ -437,7 +447,20 @@ const initializeDatabase = async () => {
       INITIAL_STOCK.forEach(item => {
         batch.set(doc(db, 'stock', item.id), item);
       });
+      INITIAL_GRAPHIC_STOCK.forEach(item => {
+        batch.set(doc(db, 'stock', item.id), item);
+      });
       hasChanges = true;
+    } else {
+      // Check if graphic stock items exist; if none exist, seed INITIAL_GRAPHIC_STOCK
+      const existingGraphicItems = stockSnap.docs.filter(d => (d.data() as any).category === 'grafica');
+      if (existingGraphicItems.length === 0) {
+        console.log('Initializing graphic stock...');
+        INITIAL_GRAPHIC_STOCK.forEach(item => {
+          batch.set(doc(db, 'stock', item.id), item);
+        });
+        hasChanges = true;
+      }
     }
     
     // Initialize printers if empty

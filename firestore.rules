@@ -33,13 +33,23 @@ service cloud.firestore {
     // --- Validation Blueprints ---
 
     function isValidStock(data) {
-      return data.keys().hasAll(['id', 'color', 'type', 'closedCount', 'openCount']) &&
+      return data.keys().hasAll(['id', 'closedCount', 'openCount']) &&
              data.id is string &&
-             data.color is string &&
-             data.color.size() <= 100 &&
-             data.type in ['PLA', 'PET-G'] &&
              data.closedCount is number &&
-             data.openCount is number;
+             data.openCount is number &&
+             (
+               // Item 3D tradicional (o retrocompatible)
+               ((!('category' in data) || data.category == '3d') &&
+                data.color is string &&
+                data.color.size() <= 100 &&
+                data.type in ['PLA', 'PET-G'])
+               ||
+               // Item de Gráfica y Papelería
+               (data.category == 'grafica' &&
+                data.name is string &&
+                data.name.size() <= 200 &&
+                data.graphicCategory in ['Papel', 'Vinilo', 'Insumo Gráfico'])
+             );
     }
 
     function isValidCustomer(data) {

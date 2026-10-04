@@ -2,18 +2,25 @@
   "entities": {
     "StockItem": {
       "title": "Stock Item",
-      "description": "Represents a filament roll in stock",
+      "description": "Represents a 3D filament roll or graphic material item in stock",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "color": { "type": "string" },
-        "type": { "type": "string", "enum": ["PLA", "PET-G"] },
+        "category": { "type": "string", "enum": ["3d", "grafica"] },
         "closedCount": { "type": "number" },
         "openCount": { "type": "number" },
         "minClosed": { "type": "number" },
-        "hexColor": { "type": "string" }
+        "color": { "type": "string" },
+        "type": { "type": "string", "enum": ["PLA", "PET-G"] },
+        "hexColor": { "type": "string" },
+        "name": { "type": "string" },
+        "graphicCategory": { "type": "string", "enum": ["Papel", "Vinilo", "Insumo Gráfico"] },
+        "sizeFormat": { "type": "string" },
+        "weightThickness": { "type": "string" },
+        "packageUnits": { "type": "string" },
+        "finishColor": { "type": "string" }
       },
-      "required": ["id", "color", "type", "closedCount", "openCount"]
+      "required": ["id", "closedCount", "openCount"]
     },
     "Printer": {
       "title": "Printer",

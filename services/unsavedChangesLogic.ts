@@ -193,16 +193,39 @@ export const isStockItemFormDirty = (
   originalItem: StockItem | null
 ): boolean => {
   if (!originalItem) {
+    if (stockItem.category === 'grafica') {
+      return Boolean(
+        stockItem.name?.trim() ||
+        stockItem.sizeFormat?.trim() ||
+        stockItem.weightThickness?.trim() ||
+        stockItem.packageUnits?.trim() ||
+        stockItem.finishColor?.trim() ||
+        (stockItem.minClosed !== undefined && stockItem.minClosed !== 1)
+      );
+    }
     return Boolean(
       stockItem.color?.trim() ||
       (stockItem.minClosed !== undefined && stockItem.minClosed !== 1)
     );
   }
 
+  if (originalItem.category === 'grafica' || stockItem.category === 'grafica') {
+    return (
+      (stockItem.name || '') !== (originalItem.name || '') ||
+      stockItem.graphicCategory !== originalItem.graphicCategory ||
+      (stockItem.sizeFormat || '') !== (originalItem.sizeFormat || '') ||
+      (stockItem.weightThickness || '') !== (originalItem.weightThickness || '') ||
+      (stockItem.packageUnits || '') !== (originalItem.packageUnits || '') ||
+      (stockItem.finishColor || '') !== (originalItem.finishColor || '') ||
+      stockItem.minClosed !== originalItem.minClosed
+    );
+  }
+
   return (
     (stockItem.color || '') !== (originalItem.color || '') ||
     stockItem.minClosed !== originalItem.minClosed ||
-    (stockItem.hexColor || '') !== (originalItem.hexColor || '')
+    (stockItem.hexColor || '') !== (originalItem.hexColor || '') ||
+    stockItem.type !== originalItem.type
   );
 };
 

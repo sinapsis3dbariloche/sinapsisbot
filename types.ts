@@ -6,14 +6,30 @@ export enum FilamentType {
   PETG = 'PET-G'
 }
 
+export type StockCategory = '3d' | 'grafica';
+export type GraphicCategory = 'Papel' | 'Vinilo' | 'Insumo Gráfico';
+
 export interface StockItem {
   id: string;
-  color: string;
-  type: FilamentType;
+  category?: StockCategory; // '3d' | 'grafica', default '3d' if undefined
+  
+  // Stock común
   closedCount: number;
   openCount: number;
-  minClosed?: number;
+  minClosed?: number; // Mínimo de stock cerrado de seguridad
+  
+  // Específico 3D
+  type?: FilamentType;
+  color?: string;
   hexColor?: string;
+
+  // Específico Gráfica / Papelería
+  name?: string; // Nombre / Descripción rápida
+  graphicCategory?: GraphicCategory; // Papel / Vinilo / Insumo Gráfico
+  sizeFormat?: string; // Medida / Formato (A4, A3, Oficio, 50cm x 1m, etc.). Default A4 para papel
+  weightThickness?: string; // Gramaje / Espesor (120g, 200g, etc.)
+  packageUnits?: string; // Cantidad por paquete (ej: "100 hojas", "10 hojas", "1 rollo")
+  finishColor?: string; // Color / Acabado (Opcional: Blanco, Gold, Fluo, Silver, Brillante, Matte)
 }
 
 export interface MaintenanceRecord {

@@ -2,7 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout';
 import StockBoard from './components/StockBoard';
+import GraphicStockBoard from './components/GraphicStockBoard';
 import StockManager from './components/StockManager';
+import { StockResetManager } from './components/StockResetManager';
 import MaintenanceBoard from './components/MaintenanceBoard';
 import PrinterManager from './components/PrinterManager';
 import CustomerManager from './components/CustomerManager';
@@ -290,12 +292,8 @@ const App: React.FC = () => {
     await updateSettings({ hotendStock: Math.max(0, newStock) });
   };
 
-  const handleResetAllStock = async () => {
-    if (window.confirm('⚠️ ¿Estás seguro? Esta acción pondrá TODOS los contadores de stock en CERO. Esto es útil para iniciar un control de inventario desde cero.')) {
-      await resetAllStockInDb();
-      setActiveTab('stock');
-      alert('Inventario reiniciado correctamente.');
-    }
+  const handleResetStock = async (category: 'all' | '3d' | 'grafica') => {
+    await resetAllStockInDb(category);
   };
 
   const handleViewRemitosByCustomer = (id: string) => {
@@ -377,6 +375,14 @@ const App: React.FC = () => {
         
         {activeTab === 'stock' && <StockBoard stock={stock} onUpdateStock={handleUpdateStockItem} />}
         
+        {activeTab === 'stock-grafica' && (
+          <GraphicStockBoard 
+            stock={stock} 
+            onUpdateStock={handleUpdateStockItem}
+            onNavigateToCatalog={() => requestNavigate('stock-edit')}
+          />
+        )}
+
         {activeTab === 'stock-edit' && (
           <StockManager 
             stock={stock} 
@@ -387,30 +393,10 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'stock-reset' && (
-          <div className="max-w-2xl mx-auto py-20 px-6">
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl p-12 text-center space-y-8 overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-2 bg-red-600"></div>
-              <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
-                <AlertTriangle size={40} />
-              </div>
-              <div className="space-y-4">
-                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Reiniciar Inventario</h2>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-md mx-auto">
-                  Esta acción establecerá todos los contadores de filamentos (Cerrados y Abiertos) en <strong>cero</strong>. Úsalo únicamente si vas a realizar un conteo físico completo desde cero.
-                </p>
-              </div>
-              <button 
-                onClick={handleResetAllStock}
-                className="w-full flex items-center justify-center gap-4 py-6 bg-red-600 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-red-700 transition-all shadow-xl shadow-red-600/30 active:scale-95 group"
-              >
-                <RotateCcw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
-                Ejecutar Reinicio Maestro
-              </button>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic">
-                Requiere confirmación adicional después de hacer clic.
-              </p>
-            </div>
-          </div>
+          <StockResetManager 
+            stock={stock} 
+            onReset={handleResetStock} 
+          />
         )}
 
         {activeTab === 'maint' && (

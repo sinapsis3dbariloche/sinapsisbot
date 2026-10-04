@@ -34,6 +34,126 @@ export const INITIAL_STOCK: StockItem[] = [
   }))
 ];
 
+export const INITIAL_GRAPHIC_STOCK: StockItem[] = [
+  {
+    id: 'papel-laminado-frio-glossy-a4-50h',
+    category: 'grafica',
+    name: 'Laminado En Frío Transparente Glossy A4 50 Hojas - Esn Blanco',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '',
+    packageUnits: '50 Hojas',
+    finishColor: 'Transparente Glossy / Blanco',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'papel-filmilo-adhesivo-blanco-frio-a4-20h',
+    category: 'grafica',
+    name: 'Filmilo Adhesivo Blanco Frío A4 20 Hojas',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '',
+    packageUnits: '20 Hojas',
+    finishColor: 'Blanco Frío',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'papel-matelina-simple-faz-a4-130g-100h',
+    category: 'grafica',
+    name: 'Papel Matelina Simple Faz A4 130g 100 Hojas Blanco Mate',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '130g',
+    packageUnits: '100 Hojas',
+    finishColor: 'Blanco Mate',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'papel-tatufan-a4-10h-blanco',
+    category: 'grafica',
+    name: 'Papel Tatufan A4 Set De 10 Hojas Blanco',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '',
+    packageUnits: '10 Hojas',
+    finishColor: 'Blanco',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'papel-foto-brillante-200g-a4-100h-x2u',
+    category: 'grafica',
+    name: 'Papel Foto Brillante 200grs - A4 - 100 Hojas X 2u. Blanco',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '200g',
+    packageUnits: '100 Hojas X 2u.',
+    finishColor: 'Blanco Brillante',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'papel-fotografico-brillante-a4-120g-100h',
+    category: 'grafica',
+    name: 'Papel Fotografico Brillante A4 120grs X100 Hojas Blanco',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '120g',
+    packageUnits: '100 Hojas',
+    finishColor: 'Blanco Brillante',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'papel-transfer-duralite-a4-10h-telas-oscuras',
+    category: 'grafica',
+    name: 'Papel Transfer Duralite A4 10 Hojas Para Telas Oscuras Inkjet',
+    graphicCategory: 'Papel',
+    sizeFormat: 'A4',
+    weightThickness: '',
+    packageUnits: '10 Hojas',
+    finishColor: 'Telas Oscuras',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'vinilo-termotransferible-duracal-50cm-1m-gold',
+    category: 'grafica',
+    name: 'Vinilo Termotransferible Fluo-silver-gold Duracal 50cm X 1m Gold',
+    graphicCategory: 'Vinilo',
+    sizeFormat: '50cm X 1m',
+    weightThickness: '',
+    packageUnits: '1 rollo',
+    finishColor: 'Gold',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  },
+  {
+    id: 'vinilo-termotransferible-duracal-50cm-1m-silver',
+    category: 'grafica',
+    name: 'Vinilo Termotransferible Fluo-silver-gold Duracal 50cm X 1m Silver',
+    graphicCategory: 'Vinilo',
+    sizeFormat: '50cm X 1m',
+    weightThickness: '',
+    packageUnits: '1 rollo',
+    finishColor: 'Silver',
+    minClosed: 1,
+    closedCount: 0,
+    openCount: 0
+  }
+];
+
 export const INITIAL_CUSTOMERS: Customer[] = [
   {
     id: 'c1',
