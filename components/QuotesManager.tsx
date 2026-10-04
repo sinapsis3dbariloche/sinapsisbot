@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Quote, Customer, QuoteItem } from '../types';
 import { 
   FileText, Plus, Search, Trash2, Download, Send, CheckCircle, 
@@ -7,6 +7,8 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../lib/AuthContext';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isQuoteFormDirty } from '../services/unsavedChangesLogic';
 
 import CustomerAutocomplete from './CustomerAutocomplete';
 import CustomerFormModal from './CustomerFormModal';
@@ -46,6 +48,9 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
       setFilterStatus(initialStatusFilter);
     }
   }, [initialStatusFilter]);
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
+  const initialSnapshot = useRef<string | null>(null);
+
   const [isAdding, setIsAdding] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [confirmingQuote, setConfirmingQuote] = useState<Quote | null>(null);
@@ -69,6 +74,18 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
     notes: '',
     createdAt: new Date().toISOString()
   });
+
+  const isFormDirty = useMemo(() => {
+    if (!isAdding) return false;
+    return isQuoteFormDirty(newQuote, initialSnapshot.current);
+  }, [isAdding, newQuote]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
 
   const filteredQuotes = quotes.filter(q => {
     const matchesSearch = q.customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -125,6 +142,7 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
 
   const startNewQuote = async () => {
     const nextNum = await getNextNumber();
+    initialSnapshot.current = null;
     setNewQuote({
       id: crypto.randomUUID(),
       number: `0001 - ${nextNum.toString().padStart(5, '0')}`,
@@ -140,9 +158,27 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
     setIsAdding(true);
   };
 
+  const handleStartNewQuoteClick = () => {
+    confirmIfDirty(() => {
+      startNewQuote();
+    }, 'Tenés un presupuesto en curso con datos no guardados. Si generas uno nuevo, se perderán todos los datos ingresados. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
+  };
+
+  const handleCloseFormClick = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setIsAdding(false);
+    }, 'Tenés un presupuesto en curso con datos no guardados. Si cerrás el formulario, se perderán todos los datos ingresados. ¿Deseas volver al formulario para guardar, o descartar todo y cerrar?');
+  };
+
   const handleEditQuote = (quote: Quote) => {
-    setNewQuote(quote);
-    setIsAdding(true);
+    if (isAdding && newQuote.id === quote.id) return;
+    confirmIfDirty(() => {
+      initialSnapshot.current = JSON.stringify(quote);
+      setNewQuote(quote);
+      setIsAdding(true);
+    }, 'Tenés un presupuesto en curso con datos no guardados. Si pasas a editar otro presupuesto, se perderán dichos datos. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
   };
 
   const handleSave = (status?: 'borrador' | 'presupuestado' | 'confirmado') => {
@@ -163,6 +199,8 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
     };
     const updatedHistory = [...(newQuote.history || []), historyEntry];
     
+    setIsDirty(false);
+    initialSnapshot.current = null;
     onUpdate({ ...newQuote, status: finalStatus, isDraft: finalStatus === 'borrador', history: updatedHistory } as Quote);
     setIsAdding(false);
   };
@@ -362,7 +400,7 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
           </div>
 
           <button 
-            onClick={startNewQuote}
+            onClick={handleStartNewQuoteClick}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 shrink-0"
           >
             <Plus size={16} /> Generar
@@ -381,7 +419,7 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
               )}
               {quotes.some(r => r.id === newQuote.id) ? 'Editar Presupuesto' : 'Nuevo Presupuesto'} No {newQuote.number}
             </h3>
-            <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            <button onClick={handleCloseFormClick} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -502,7 +540,7 @@ const QuotesManager: React.FC<QuotesManagerProps> = ({
             
             <div className="flex gap-3 w-full md:w-auto">
               <button 
-                onClick={() => setIsAdding(false)}
+                onClick={handleCloseFormClick}
                 className="flex-1 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all border border-slate-100"
               >
                 Cancelar

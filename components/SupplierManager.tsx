@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Supplier } from '../types';
 import { Search, Edit2, Trash2, Save, X, Phone, Mail, MapPin, Instagram, Globe, MessageCircle, ExternalLink, Briefcase, Plus, FileText } from 'lucide-react';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isSupplierFormDirty } from '../services/unsavedChangesLogic';
 
 interface SupplierManagerProps {
   suppliers: Supplier[];
@@ -10,11 +12,29 @@ interface SupplierManagerProps {
 }
 
 const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, onDelete }) => {
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
+  const initialSnapshot = useRef<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Supplier>>({});
+
+  const isFormDirty = useMemo(() => {
+    if (!isAdding && !editingId) return false;
+    const origSupplier = editingId && editingId !== 'new' && initialSnapshot.current
+      ? JSON.parse(initialSnapshot.current)
+      : null;
+    return isSupplierFormDirty(formData, origSupplier);
+  }, [isAdding, editingId, formData]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
 
   const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -22,43 +42,61 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
   );
 
   const handleEdit = (supplier: Supplier) => {
-    setEditingId(supplier.id);
-    setFormData({
-      street: '',
-      number: '',
-      city: '',
-      contactName: '',
-      phone: '',
-      email: '',
-      instagram: '',
-      web: '',
-      notes: '',
-      ...supplier
-    });
-    setIsAdding(true);
+    if (editingId === supplier.id) return;
+    confirmIfDirty(() => {
+      initialSnapshot.current = JSON.stringify(supplier);
+      setEditingId(supplier.id);
+      setFormData({
+        street: '',
+        number: '',
+        city: '',
+        contactName: '',
+        phone: '',
+        email: '',
+        instagram: '',
+        web: '',
+        notes: '',
+        ...supplier
+      });
+      setIsAdding(true);
+    }, 'Tenés datos del proveedor sin guardar. Si pasas a editar otro proveedor, se perderán los cambios. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
   };
 
   const handleAddNew = () => {
-    setEditingId('new');
-    setFormData({
-      id: crypto.randomUUID(),
-      name: '',
-      contactName: '',
-      phone: '',
-      email: '',
-      instagram: '',
-      web: '',
-      street: '',
-      number: '',
-      city: '',
-      notes: '',
-      createdAt: new Date().toISOString()
-    });
-    setIsAdding(true);
+    confirmIfDirty(() => {
+      initialSnapshot.current = null;
+      setEditingId('new');
+      setFormData({
+        id: crypto.randomUUID(),
+        name: '',
+        contactName: '',
+        phone: '',
+        email: '',
+        instagram: '',
+        web: '',
+        street: '',
+        number: '',
+        city: '',
+        notes: '',
+        createdAt: new Date().toISOString()
+      });
+      setIsAdding(true);
+    }, 'Tenés datos del proveedor sin guardar. Si inicias un nuevo registro, se perderán los cambios. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
+  };
+
+  const handleClose = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setEditingId(null);
+      setIsAdding(false);
+    }, 'Tenés datos del proveedor sin guardar. Si cerrás el formulario, se perderán los cambios. ¿Deseas volver al formulario para guardar, o descartar todo y cerrar?');
   };
 
   const handleSave = () => {
     if (!formData.name) return alert('El nombre del proveedor es obligatorio');
+    setIsDirty(false);
+    initialSnapshot.current = null;
     onUpdate(formData as Supplier);
     setEditingId(null);
     setIsAdding(false);
@@ -110,7 +148,7 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
             <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest">
               {editingId === 'new' ? 'Nuevo Registro de Proveedor' : 'Editar Proveedor'}
             </h3>
-            <button onClick={() => {setEditingId(null); setIsAdding(false);}} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            <button onClick={handleClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -217,7 +255,7 @@ const SupplierManager: React.FC<SupplierManagerProps> = ({ suppliers, onUpdate, 
 
           <div className="flex justify-end gap-3 pt-4">
             <button 
-              onClick={() => {setEditingId(null); setIsAdding(false);}}
+              onClick={handleClose}
               className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
             >
               Cancelar

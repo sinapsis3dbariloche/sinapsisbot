@@ -1,10 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Customer, Quote, Remito } from '../types';
 import { UserPlus, Search, Edit2, Trash2, Save, X, Phone, Mail, MapPin, Hash, Instagram, FileText, User, MessageCircle, ExternalLink, Package } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import ConfirmDialog from './ConfirmDialog';
 import Pagination from './Pagination';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isCustomerFormDirty } from '../services/unsavedChangesLogic';
 
 interface CustomerManagerProps {
   customers: Customer[];
@@ -16,6 +18,9 @@ interface CustomerManagerProps {
 }
 
 const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, quotes, remitos, onUpdate, onDelete, onViewRemitos }) => {
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
+  const initialSnapshot = useRef<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -24,6 +29,21 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, quotes, re
   const [formData, setFormData] = useState<Partial<Customer>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
+  const isFormDirty = useMemo(() => {
+    if (!isAdding && !editingId) return false;
+    const origCustomer = editingId && editingId !== 'new' && initialSnapshot.current
+      ? JSON.parse(initialSnapshot.current)
+      : null;
+    return isCustomerFormDirty(formData, origCustomer);
+  }, [isAdding, editingId, formData]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
 
   const filteredCustomers = customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,46 +62,64 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, quotes, re
   );
 
   const handleEdit = (customer: Customer) => {
-    setEditingId(customer.id);
-    setFormData({
-      street: '',
-      number: '',
-      city: 'Bariloche',
-      contactName: '',
-      phone: '',
-      email: '',
-      instagram: '',
-      cuit: '',
-      taxCondition: 'Consumidor Final',
-      notes: '',
-      history: [],
-      ...customer
-    });
-    setIsAdding(true);
+    if (editingId === customer.id) return;
+    confirmIfDirty(() => {
+      initialSnapshot.current = JSON.stringify(customer);
+      setEditingId(customer.id);
+      setFormData({
+        street: '',
+        number: '',
+        city: 'Bariloche',
+        contactName: '',
+        phone: '',
+        email: '',
+        instagram: '',
+        cuit: '',
+        taxCondition: 'Consumidor Final',
+        notes: '',
+        history: [],
+        ...customer
+      });
+      setIsAdding(true);
+    }, 'Tenés datos del cliente sin guardar. Si pasas a editar otro cliente, se perderán los cambios. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
   };
 
   const handleAddNew = () => {
-    setEditingId('new');
-    setFormData({
-      id: crypto.randomUUID(),
-      name: '',
-      contactName: '',
-      phone: '',
-      email: '',
-      street: '',
-      number: '',
-      city: 'Bariloche',
-      cuit: '',
-      taxCondition: 'Consumidor Final',
-      instagram: '',
-      notes: '',
-      createdAt: new Date().toISOString()
-    });
-    setIsAdding(true);
+    confirmIfDirty(() => {
+      initialSnapshot.current = null;
+      setEditingId('new');
+      setFormData({
+        id: crypto.randomUUID(),
+        name: '',
+        contactName: '',
+        phone: '',
+        email: '',
+        street: '',
+        number: '',
+        city: 'Bariloche',
+        cuit: '',
+        taxCondition: 'Consumidor Final',
+        instagram: '',
+        notes: '',
+        createdAt: new Date().toISOString()
+      });
+      setIsAdding(true);
+    }, 'Tenés datos del cliente sin guardar. Si inicias un nuevo registro, se perderán los cambios. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
+  };
+
+  const handleClose = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setEditingId(null);
+      setIsAdding(false);
+    }, 'Tenés datos del cliente sin guardar. Si cerrás el formulario, se perderán los cambios. ¿Deseas volver al formulario para guardar, o descartar todo y cerrar?');
   };
 
   const handleSave = () => {
     if (!formData.name) return alert('El nombre es obligatorio');
+    setIsDirty(false);
+    initialSnapshot.current = null;
     onUpdate(formData as Customer);
     setEditingId(null);
     setIsAdding(false);
@@ -170,7 +208,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, quotes, re
             <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest">
               {editingId === 'new' ? 'Nuevo Registro de Cliente' : 'Editar Cliente'}
             </h3>
-            <button onClick={() => {setEditingId(null); setIsAdding(false);}} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            <button onClick={handleClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -290,7 +328,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ customers, quotes, re
 
           <div className="flex justify-end gap-3 pt-4">
             <button 
-              onClick={() => {setEditingId(null); setIsAdding(false);}}
+              onClick={handleClose}
               className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
             >
               Cancelar

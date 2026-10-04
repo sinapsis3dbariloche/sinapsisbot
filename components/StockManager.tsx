@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StockItem, FilamentType } from '../types';
 import { Plus, Trash2, Edit2, Save, X, Settings2, Droplet } from 'lucide-react';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isStockItemFormDirty } from '../services/unsavedChangesLogic';
 
 interface StockManagerProps {
   stock: StockItem[];
@@ -11,19 +13,62 @@ interface StockManagerProps {
 }
 
 const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onDelete }) => {
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const initialSnapshot = useRef<string | null>(null);
   
   // State for forms
   const [formData, setFormData] = useState<Partial<StockItem>>({});
 
+  const isFormDirty = useMemo(() => {
+    if (!isAdding && !editingId) return false;
+    const origStock = editingId && initialSnapshot.current
+      ? JSON.parse(initialSnapshot.current)
+      : null;
+    return isStockItemFormDirty(formData, origStock);
+  }, [isAdding, editingId, formData]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
+
+  const handleStartAdd = () => {
+    confirmIfDirty(() => {
+      initialSnapshot.current = null;
+      setEditingId(null);
+      setIsAdding(true);
+      setFormData({ type: FilamentType.PLA, hexColor: '#ffa500', minClosed: 1 });
+    });
+  };
+
+  const handleCancel = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setIsAdding(false);
+      setEditingId(null);
+      setFormData({});
+    }, 'Tenés datos del filamento sin guardar. ¿Deseas descartar y salir?');
+  };
+
   const handleEdit = (item: StockItem) => {
-    setEditingId(item.id);
-    setFormData(item);
+    if (editingId === item.id) return;
+    confirmIfDirty(() => {
+      setIsAdding(false);
+      initialSnapshot.current = JSON.stringify(item);
+      setEditingId(item.id);
+      setFormData(item);
+    });
   };
 
   const handleSave = async () => {
     if (!formData.color || !formData.id) return;
+    setIsDirty(false);
+    initialSnapshot.current = null;
     await onUpdate(formData.id, formData);
     setEditingId(null);
     setFormData({});
@@ -40,6 +85,8 @@ const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onD
       minClosed: formData.minClosed || 1,
       hexColor: formData.hexColor || '#cccccc'
     };
+    setIsDirty(false);
+    initialSnapshot.current = null;
     await onAdd(newItem);
     setIsAdding(false);
     setFormData({});
@@ -59,7 +106,7 @@ const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onD
         </div>
         {!isAdding && (
           <button 
-            onClick={() => { setIsAdding(true); setFormData({ type: FilamentType.PLA, hexColor: '#ffa500', minClosed: 1 }); }}
+            onClick={handleStartAdd}
             className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20"
           >
             <Plus size={16} /> Agregar Filamento
@@ -115,7 +162,7 @@ const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onD
             </div>
           </div>
           <div className="mt-8 flex justify-end gap-3">
-            <button onClick={() => setIsAdding(false)} className="px-6 py-3 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
+            <button onClick={handleCancel} className="px-6 py-3 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
             <button onClick={handleCreate} className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg">Crear Filamento</button>
           </div>
         </div>
@@ -186,7 +233,7 @@ const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onD
                     {editingId === item.id ? (
                       <div className="flex justify-end gap-2">
                         <button onClick={handleSave} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Save size={18} /></button>
-                        <button onClick={() => setEditingId(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
+                        <button onClick={handleCancel} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
                       </div>
                     ) : (
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -241,7 +288,7 @@ const StockManager: React.FC<StockManagerProps> = ({ stock, onAdd, onUpdate, onD
                     />
                     <div className="flex gap-2">
                       <button onClick={handleSave} className="bg-green-600 text-white p-2.5 rounded-xl"><Save size={18} /></button>
-                      <button onClick={() => setEditingId(null)} className="bg-slate-200 text-slate-600 p-2.5 rounded-xl"><X size={18} /></button>
+                      <button onClick={handleCancel} className="bg-slate-200 text-slate-600 p-2.5 rounded-xl"><X size={18} /></button>
                     </div>
                   </div>
                 </div>

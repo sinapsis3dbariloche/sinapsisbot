@@ -1,9 +1,11 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Supplier, Expense, ExpenseItem } from '../types';
 import { Search, Plus, Trash2, Edit2, Save, X, Calendar, User, FileText, DollarSign, List, ChevronRight, History } from 'lucide-react';
 import Pagination from './Pagination';
 import { useAuth } from '../lib/AuthContext';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isExpenseFormDirty } from '../services/unsavedChangesLogic';
 
 interface ExpenseManagerProps {
   expenses: Expense[];
@@ -35,6 +37,9 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     }
   }, [initialFilterMonth]);
 
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
+  const initialSnapshot = useRef<string | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -52,6 +57,18 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     notes: '',
     createdAt: ''
   });
+
+  const isFormDirty = useMemo(() => {
+    if (!isAdding) return false;
+    return isExpenseFormDirty(formData, initialSnapshot.current);
+  }, [isAdding, formData]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
 
   const uniqueYears = useMemo(() => {
     const years = expenses.map(e => new Date(e.date).getFullYear());
@@ -81,6 +98,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
   );
 
   const handleAddNew = () => {
+    initialSnapshot.current = null;
     setFormData({
       id: crypto.randomUUID(),
       date: new Date().toISOString().split('T')[0],
@@ -96,13 +114,31 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
     setEditingId(null);
   };
 
+  const handleAddNewClick = () => {
+    confirmIfDirty(() => {
+      handleAddNew();
+    }, 'Tenés un registro de gasto con datos no guardados. Si inicias uno nuevo, se perderán todos los datos ingresados. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
+  };
+
+  const handleCloseClick = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setIsAdding(false);
+      setEditingId(null);
+    }, 'Tenés un registro de gasto con datos no guardados. Si cerrás el formulario, se perderán todos los datos ingresados. ¿Deseas volver al formulario para guardar, o descartar todo y cerrar?');
+  };
+
   const handleEdit = (expense: Expense) => {
-    setFormData({
-      ...expense,
-      date: new Date(expense.date).toISOString().split('T')[0]
-    });
-    setEditingId(expense.id);
-    setIsAdding(true);
+    if (isAdding && editingId === expense.id) return;
+    confirmIfDirty(() => {
+      const formattedDate = new Date(expense.date).toISOString().split('T')[0];
+      const snapshotObj = { ...expense, date: formattedDate };
+      initialSnapshot.current = JSON.stringify(snapshotObj);
+      setFormData(snapshotObj);
+      setEditingId(expense.id);
+      setIsAdding(true);
+    }, 'Tenés un registro de gasto con datos no guardados. Si pasas a editar otro gasto, se perderán dichos datos. ¿Deseas volver al formulario para guardar, o descartar todo y avanzar?');
   };
 
   const handleAddItem = () => {
@@ -160,6 +196,8 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
       history: [...((formData as Expense).history || []), historyEntry]
     };
 
+    setIsDirty(false);
+    initialSnapshot.current = null;
     onUpdate(finalData);
     setIsAdding(false);
     setEditingId(null);
@@ -238,7 +276,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
           </label>
 
           <button 
-            onClick={handleAddNew}
+            onClick={handleAddNewClick}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 shrink-0"
           >
             <Plus size={16} /> Gasto
@@ -253,7 +291,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
             <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest">
               {editingId ? 'Editar Registro de Gasto' : 'Nuevo Registro de Gasto'}
             </h3>
-            <button onClick={() => {setIsAdding(false); setEditingId(null);}} className="text-slate-400 hover:text-slate-600">
+            <button onClick={handleCloseClick} className="text-slate-400 hover:text-slate-600">
               <X size={20} />
             </button>
           </div>
@@ -363,7 +401,7 @@ const ExpenseManager: React.FC<ExpenseManagerProps> = ({ expenses, suppliers, on
 
           <div className="flex justify-end gap-3 pt-4">
             <button 
-              onClick={() => {setIsAdding(false); setEditingId(null);}}
+              onClick={handleCloseClick}
               className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all border border-slate-100"
             >
               Cancelar

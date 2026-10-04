@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout';
 import StockBoard from './components/StockBoard';
 import StockManager from './components/StockManager';
@@ -51,9 +51,11 @@ import { useAuth } from './lib/AuthContext';
 import Login from './components/Login';
 import { testFirestoreConnection } from './lib/firebase';
 import { NewVersionToast } from './components/NewVersionToast';
+import { useUnsavedChanges } from './lib/UnsavedChangesContext';
 
 const App: React.FC = () => {
   const { user, loading, isAdmin, logout } = useAuth();
+  const { requestNavigate, registerNavigateHandler } = useUnsavedChanges();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [navKey, setNavKey] = useState(0);
   const [remitoFilterCustomerId, setRemitoFilterCustomerId] = useState<string | null>(null);
@@ -64,7 +66,7 @@ const App: React.FC = () => {
   const [expenseIncludeDrafts, setExpenseIncludeDrafts] = useState<boolean>(true);
   const [filterMonth, setFilterMonth] = useState<string | null>(null);
 
-  const handleNavigate = (tab: string, filters?: any) => {
+  const handleNavigate = useCallback((tab: string, filters?: any) => {
     setActiveTab(tab);
     setNavKey(prev => prev + 1);
     
@@ -86,7 +88,12 @@ const App: React.FC = () => {
       if (filters.draftFilter) setRemitoDraftFilter(filters.draftFilter);
       if (filters.includeDrafts !== undefined) setExpenseIncludeDrafts(filters.includeDrafts);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    registerNavigateHandler(handleNavigate);
+  }, [handleNavigate, registerNavigateHandler]);
+
   const [stock, setStock] = useState<StockItem[]>([]);
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -292,8 +299,7 @@ const App: React.FC = () => {
   };
 
   const handleViewRemitosByCustomer = (id: string) => {
-    setRemitoFilterCustomerId(id);
-    setActiveTab('remitos');
+    requestNavigate('remitos', { customerId: id });
   };
 
   const handleSaveBalanceClosing = async (closing: BalanceClosing) => {
@@ -352,7 +358,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+    <Layout activeTab={activeTab} setActiveTab={requestNavigate}>
       <div className="relative h-full">
         <div className={`absolute -top-6 right-0 flex items-center gap-1.5 transition-opacity duration-500 ${isSynced ? 'opacity-100' : 'opacity-0'}`}>
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -365,7 +371,7 @@ const App: React.FC = () => {
             expenses={expenses} 
             quotes={quotes} 
             balanceClosings={balanceClosings}
-            onNavigateAction={handleNavigate} 
+            onNavigateAction={requestNavigate} 
           />
         )}
         
@@ -439,7 +445,7 @@ const App: React.FC = () => {
             onViewRemito={(remitoId) => {
               const remito = remitos.find(r => r.id === remitoId);
               if (remito) {
-                handleNavigate('remitos', { customerId: remito.customerId });
+                requestNavigate('remitos', { customerId: remito.customerId });
               }
             }}
           />

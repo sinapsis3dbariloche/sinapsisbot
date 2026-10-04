@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   confirmStyle?: 'danger' | 'primary';
   isAlert?: boolean;
+  confirmText?: string;
+  cancelText?: string;
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ 
@@ -18,7 +20,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm, 
   onCancel,
   confirmStyle = 'danger',
-  isAlert = false
+  isAlert = false,
+  confirmText,
+  cancelText
 }) => {
   if (!isOpen) return null;
 
@@ -36,19 +40,16 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               onClick={onCancel}
               className="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
             >
-              Cancelar
+              {cancelText || 'Cancelar'}
             </button>
           )}
           <button 
-            onClick={() => {
-              onConfirm();
-              if (!isAlert) onCancel();
-            }}
+            onClick={onConfirm}
             className={`px-4 py-2 rounded-xl text-sm font-black text-white hover:opacity-90 transition-colors ${
               confirmStyle === 'danger' ? 'bg-red-600' : 'bg-blue-600'
             }`}
           >
-            {isAlert ? 'Entendido' : 'Confirmar'}
+            {isAlert ? (confirmText || 'Entendido') : (confirmText || 'Confirmar')}
           </button>
         </div>
       </div>

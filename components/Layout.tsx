@@ -2,6 +2,7 @@
 import { Package, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const { logout, user } = useAuth();
+  const { confirmIfDirty } = useUnsavedChanges();
 
   const versionString = React.useMemo(() => {
     if (typeof __BUILD_TIME__ === 'undefined' || __BUILD_TIME__ === 'dev') return 'v.DEV';
@@ -109,8 +111,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveTab(item.id);
-                    setIsSidebarOpen(false);
+                    if (activeTab === item.id) {
+                      setIsSidebarOpen(false);
+                      return;
+                    }
+                    confirmIfDirty(() => {
+                      setActiveTab(item.id);
+                      setIsSidebarOpen(false);
+                    }, 'Tenés datos cargados sin guardar en el formulario actual. Si cambiás de sección, se perderán los datos no guardados. ¿Deseas volver para guardar, o descartar todo y avanzar?');
                   }}
                   title={isSidebarCollapsed ? item.label : undefined}
                   className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} py-3 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 shrink-0 ${isSidebarCollapsed ? 'px-0' : (isSub ? 'pl-8 text-[9px] opacity-70' : 'px-4 text-[11px]')} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
@@ -141,7 +149,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
             )}
             
             <button 
-              onClick={logout}
+              onClick={() => {
+                confirmIfDirty(() => logout(), 'Tenés datos cargados sin guardar. Si cerrás sesión, se perderá la información ingresada. ¿Deseas cerrar sesión de todos modos?');
+              }}
               title={isSidebarCollapsed ? "Cerrar Sesión" : undefined}
               className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} ${isSidebarCollapsed ? 'p-3' : 'px-4 py-3'} rounded-2xl font-black uppercase tracking-widest text-[11px] text-red-500 hover:bg-red-500/10 transition-all duration-300`}
             >

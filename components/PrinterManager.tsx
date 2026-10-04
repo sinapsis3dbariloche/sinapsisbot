@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Printer } from '../types';
 import { Plus, Trash2, Edit2, Save, X, MonitorSmartphone, CheckSquare, Square } from 'lucide-react';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isPrinterFormDirty } from '../services/unsavedChangesLogic';
 
 interface PrinterManagerProps {
   printers: Printer[];
@@ -11,9 +13,45 @@ interface PrinterManagerProps {
 }
 
 const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpdate, onDelete }) => {
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Printer>>({});
+  const initialSnapshot = useRef<string | null>(null);
+
+  const isFormDirty = useMemo(() => {
+    if (!isAdding && !editingId) return false;
+    const origPrinter = editingId && initialSnapshot.current
+      ? JSON.parse(initialSnapshot.current)
+      : null;
+    return isPrinterFormDirty(formData, origPrinter);
+  }, [isAdding, editingId, formData]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
+
+  const handleStartAdd = () => {
+    confirmIfDirty(() => {
+      initialSnapshot.current = null;
+      setEditingId(null);
+      setFormData({});
+      setIsAdding(true);
+    });
+  };
+
+  const handleCancel = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setIsAdding(false);
+      setEditingId(null);
+      setFormData({});
+    }, 'Tenés datos ingresados sin guardar. ¿Deseas descartar y salir?');
+  };
 
   const handleCreate = async () => {
     if (!formData.name || !formData.model) return;
@@ -24,6 +62,8 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
       hasAMS: !!formData.hasAMS,
       history: []
     };
+    setIsDirty(false);
+    initialSnapshot.current = null;
     await onAdd(newPrinter);
     setIsAdding(false);
     setFormData({});
@@ -31,14 +71,21 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
 
   const handleSaveEdit = async () => {
     if (!formData.id) return;
+    setIsDirty(false);
+    initialSnapshot.current = null;
     await onUpdate(formData as Printer);
     setEditingId(null);
     setFormData({});
   };
 
   const startEdit = (printer: Printer) => {
-    setEditingId(printer.id);
-    setFormData(printer);
+    if (editingId === printer.id) return;
+    confirmIfDirty(() => {
+      setIsAdding(false);
+      initialSnapshot.current = JSON.stringify(printer);
+      setEditingId(printer.id);
+      setFormData(printer);
+    });
   };
 
   return (
@@ -55,7 +102,7 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
         </div>
         {!isAdding && (
           <button 
-            onClick={() => setIsAdding(true)}
+            onClick={handleStartAdd}
             className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20"
           >
             <Plus size={16} /> Nueva Impresora
@@ -98,7 +145,7 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
             </div>
           </div>
           <div className="mt-8 flex justify-end gap-3">
-            <button onClick={() => setIsAdding(false)} className="px-6 py-3 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
+            <button onClick={handleCancel} className="px-6 py-3 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
             <button onClick={handleCreate} className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg">Registrar Máquina</button>
           </div>
         </div>
@@ -169,7 +216,7 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
                     {editingId === printer.id ? (
                       <div className="flex justify-end gap-2">
                         <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Save size={18} /></button>
-                        <button onClick={() => setEditingId(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
+                        <button onClick={handleCancel} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
                       </div>
                     ) : (
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -223,7 +270,7 @@ const PrinterManager: React.FC<PrinterManagerProps> = ({ printers, onAdd, onUpda
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleSaveEdit} className="flex-1 bg-green-600 text-white py-2.5 rounded-xl flex items-center justify-center"><Save size={18} /></button>
-                    <button onClick={() => setEditingId(null)} className="flex-1 bg-slate-200 text-slate-600 py-2.5 rounded-xl flex items-center justify-center"><X size={18} /></button>
+                    <button onClick={handleCancel} className="flex-1 bg-slate-200 text-slate-600 py-2.5 rounded-xl flex items-center justify-center"><X size={18} /></button>
                   </div>
                 </div>
               ) : (

@@ -25,6 +25,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateBalancePeriod, normalizeDateString } from '../services/balanceCalculator';
 import ConfirmDialog from './ConfirmDialog';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isBalanceFormDirty } from '../services/unsavedChangesLogic';
 
 interface BalanceManagerProps {
   remitos: Remito[];
@@ -45,6 +47,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   onDeleteClosing,
   currentUserEmail = 'Admin'
 }) => {
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
   const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
 
   // Sorted closings: newest end date first
@@ -91,6 +94,17 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   }, [startDate, endDate]);
 
   const activeName = closingName.trim() || suggestedName;
+
+  const isFormDirty = useMemo(() => {
+    return activeTab === 'create' && isBalanceFormDirty(closingNotes, closingName);
+  }, [activeTab, closingNotes, closingName]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
 
   // Live calculation of preview for the chosen dates
   const preview = useMemo(() => {
@@ -141,6 +155,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
     if (!preview) return;
     setIsSubmitting(true);
     try {
+      setIsDirty(false);
       await onSaveClosing(preview);
       setShowConfirmModal(false);
       setClosingName('');
@@ -303,7 +318,15 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
             Nuevo Cierre
           </button>
           <button
-            onClick={() => setActiveTab('history')}
+            onClick={() => {
+              if (activeTab === 'history') return;
+              confirmIfDirty(() => {
+                setIsDirty(false);
+                setClosingName('');
+                setClosingNotes('');
+                setActiveTab('history');
+              }, 'Tenés notas o configuración del balance sin guardar. ¿Deseas descartar y ver el historial?');
+            }}
             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
               activeTab === 'history'
                 ? 'bg-white text-orange-600 shadow-sm'

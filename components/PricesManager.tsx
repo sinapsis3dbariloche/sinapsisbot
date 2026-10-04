@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PriceItem, PriceHistoryEntry, Remito } from '../types';
 import { Search, Edit2, Trash2, Save, X, Plus, DollarSign, Tag, HandCoins, History, Sparkles, Loader2 } from 'lucide-react';
 import { suggestPriceItemsFromSales } from '../services/geminiService';
+import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
+import { isPriceItemFormDirty } from '../services/unsavedChangesLogic';
 
 interface PricesManagerProps {
   prices: PriceItem[];
@@ -11,6 +13,7 @@ interface PricesManagerProps {
 }
 
 const PricesManager: React.FC<PricesManagerProps> = ({ prices, remitos = [], onUpdate, onDelete }) => {
+  const { setIsDirty, confirmIfDirty } = useUnsavedChanges();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -18,28 +21,51 @@ const PricesManager: React.FC<PricesManagerProps> = ({ prices, remitos = [], onU
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [historyPriceId, setHistoryPriceId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<PriceItem>>({});
+  const initialSnapshot = useRef<string | null>(null);
+
+  const isFormDirty = useMemo(() => {
+    if (!isAdding && !editingId) return false;
+    const origPrice = editingId && editingId !== 'new' && initialSnapshot.current
+      ? JSON.parse(initialSnapshot.current)
+      : null;
+    return isPriceItemFormDirty(formData, origPrice);
+  }, [isAdding, editingId, formData]);
+
+  useEffect(() => {
+    setIsDirty(isFormDirty);
+    return () => {
+      setIsDirty(false);
+    };
+  }, [isFormDirty, setIsDirty]);
 
   const filteredPrices = prices.filter(p => 
     p.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (price: PriceItem) => {
-    setEditingId(price.id);
-    setFormData({ ...price });
-    setIsAdding(true);
+    if (editingId === price.id) return;
+    confirmIfDirty(() => {
+      initialSnapshot.current = JSON.stringify(price);
+      setEditingId(price.id);
+      setFormData({ ...price });
+      setIsAdding(true);
+    });
   };
 
   const handleAddNew = () => {
-    setEditingId('new');
-    setFormData({
-      id: crypto.randomUUID(),
-      description: '',
-      wholesalePrice: 0,
-      retailPrice: 0,
-      wholesaleMinQuantity: 0,
-      createdAt: new Date().toISOString()
+    confirmIfDirty(() => {
+      initialSnapshot.current = null;
+      setEditingId('new');
+      setFormData({
+        id: crypto.randomUUID(),
+        description: '',
+        wholesalePrice: 0,
+        retailPrice: 0,
+        wholesaleMinQuantity: 0,
+        createdAt: new Date().toISOString()
+      });
+      setIsAdding(true);
     });
-    setIsAdding(true);
   };
 
   const handleSave = () => {
@@ -79,9 +105,20 @@ const PricesManager: React.FC<PricesManagerProps> = ({ prices, remitos = [], onU
       history: newHistory
     };
     
+    setIsDirty(false);
+    initialSnapshot.current = null;
     onUpdate(newPrice);
     setEditingId(null);
     setIsAdding(false);
+  };
+
+  const handleClose = () => {
+    confirmIfDirty(() => {
+      setIsDirty(false);
+      initialSnapshot.current = null;
+      setEditingId(null);
+      setIsAdding(false);
+    }, 'Tenés datos del precio sin guardar. ¿Deseas descartar y salir?');
   };
 
   const handleAnalyzeSales = async () => {
@@ -178,7 +215,7 @@ const PricesManager: React.FC<PricesManagerProps> = ({ prices, remitos = [], onU
             <h3 className="font-black text-slate-900 uppercase text-sm tracking-widest">
               {editingId === 'new' ? 'Nuevo Registro de Precio' : 'Editar Precio'}
             </h3>
-            <button onClick={() => {setEditingId(null); setIsAdding(false);}} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            <button onClick={handleClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -229,7 +266,7 @@ const PricesManager: React.FC<PricesManagerProps> = ({ prices, remitos = [], onU
 
           <div className="flex justify-end gap-3 pt-4">
             <button 
-              onClick={() => {setEditingId(null); setIsAdding(false);}}
+              onClick={handleClose}
               className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
             >
               Cancelar
