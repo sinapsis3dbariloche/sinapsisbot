@@ -1,5 +1,5 @@
 
-import { Package, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, Scale, Layers } from 'lucide-react';
+import { Package, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, Scale, Layers, Bot } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
@@ -29,6 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'assistant', label: 'Asistente IA', icon: Bot },
     { id: 'customers', label: 'Clientes', icon: Users },
     { id: 'quotes', label: 'Presupuestos', icon: FileText },
     { id: 'remitos', label: 'Ventas', icon: FileText },

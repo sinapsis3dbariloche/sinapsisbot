@@ -1,12 +1,45 @@
 import { Remito, Expense, Quote, BalanceClosing, DebtorSummary } from '../types';
 
 /**
- * Normalizes a date string or timestamp to a comparable YYYY-MM-DD format
+ * Normalizes a date string, Date, timestamp object, or number to a comparable YYYY-MM-DD format
  */
-export const normalizeDateString = (dateStr: string | undefined | null): string => {
-  if (!dateStr) return '';
-  // Handles YYYY-MM-DD or ISO strings like 2026-09-29T11:55:45
-  return dateStr.slice(0, 10);
+export const normalizeDateString = (dateVal: any): string => {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string') {
+    // If it's already YYYY-MM-DD or ISO string
+    const trimmed = dateVal.trim();
+    if (trimmed.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+      return trimmed.slice(0, 10);
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return trimmed.slice(0, 10);
+  }
+  if (typeof dateVal?.toDate === 'function') {
+    try {
+      return dateVal.toDate().toISOString().slice(0, 10);
+    } catch {
+      return '';
+    }
+  }
+  if (dateVal instanceof Date) {
+    return isNaN(dateVal.getTime()) ? '' : dateVal.toISOString().slice(0, 10);
+  }
+  if (typeof dateVal === 'number') {
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+  }
+  if (dateVal?.seconds && typeof dateVal.seconds === 'number') {
+    const d = new Date(dateVal.seconds * 1000);
+    return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+  }
+  try {
+    return String(dateVal).slice(0, 10);
+  } catch {
+    return '';
+  }
 };
 
 export interface BalancePeriodParams {

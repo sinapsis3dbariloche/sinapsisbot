@@ -17,8 +17,12 @@ describe('Balance Calculator & Financial Logic', () => {
   it('normalizes various date formats properly to YYYY-MM-DD', () => {
     expect(normalizeDateString('2026-05-15')).toBe('2026-05-15');
     expect(normalizeDateString('2026-10-02T11:42:07-07:00')).toBe('2026-10-02');
+    expect(normalizeDateString(new Date('2026-04-10T15:00:00Z'))).toBe('2026-04-10');
+    expect(normalizeDateString({ seconds: 1775836800, nanoseconds: 0 })).toBe('2026-04-10');
+    expect(normalizeDateString({ toDate: () => new Date('2026-04-10T00:00:00Z') })).toBe('2026-04-10');
     expect(normalizeDateString('')).toBe('');
     expect(normalizeDateString(null)).toBe('');
+    expect(normalizeDateString(undefined)).toBe('');
   });
 
   it('calculates a period closing with NET PROFIT (Liquidated)', () => {

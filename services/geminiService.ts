@@ -41,7 +41,9 @@ const calculateBudgetDeclaration: FunctionDeclaration = {
 };
 
 export async function suggestPriceItemsFromSales(salesItems: { description: string, price: number }[]): Promise<any[]> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) return [];
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
 Eres un asistente experto en analizar ventas y generar listas de precios genéricas.
@@ -57,7 +59,7 @@ ${JSON.stringify(salesItems, null, 2)}
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -83,7 +85,7 @@ ${JSON.stringify(salesItems, null, 2)}
     return [];
   } catch (error) {
     console.error("Error generating price suggestions:", error);
-    throw error;
+    return [];
   }
 }
 
@@ -93,14 +95,18 @@ export class SinapsisBotService {
     private stock: any[], 
     private orders: any[], 
     private prices: { pla: number, petg: number, design: number, postProcess: number },
-    private onStateChange: (newState: { stock?: any[], orders?: any[] }) => void
+    private onStateChange?: (newState: { stock?: any[], orders?: any[] }) => void
   ) {}
 
-  async sendMessage(message: string) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  async sendMessage(message: string): Promise<string | undefined> {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+      return undefined;
+    }
+    const ai = new GoogleGenAI({ apiKey });
     
     const chat = ai.chats.create({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.8-flash',
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         tools: [{
@@ -117,17 +123,16 @@ export class SinapsisBotService {
       let result = await chat.sendMessage({ message });
       
       if (result.functionCalls) {
-        const toolResponses: any[] = [];
-        
         for (const call of result.functionCalls) {
-          let responseData;
-          
           if (call.name === 'get_stock') {
             const stockReport = this.stock.map(s => {
               const min = s.type === 'PET-G' ? 1 : (s.color === 'Blanco' || s.color === 'Negro' ? 3 : 1);
               return `COLOR: ${s.color} | TIPO: ${s.type} | CERRADOS: ${s.closedCount} | MINIMO: ${min} | STATUS: ${s.closedCount < min ? 'FALTA' : 'OK'}`;
             }).join('\n');
-            responseData = { result: stockReport };
+            const finalResult = await chat.sendMessage({
+              message: `El stock actual es:\n${stockReport}\nPor favor responde al usuario con un resumen conciso de faltantes y estado.`
+            });
+            return finalResult.text;
           } else if (call.name === 'calculate_budget') {
             const { weight, clientType, filamentType, designMinutes = 0, postProcessMinutes = 0, modelCost = 0 } = call.args as any;
             const currentPrice = filamentType === 'PET-G' ? this.prices.petg : this.prices.pla;
@@ -142,35 +147,18 @@ export class SinapsisBotService {
             const postProcessCost = (this.prices.postProcess / 60) * postProcessMinutes;
             const finalPrice = printingPrice + designCost + postProcessCost + modelCost;
             
-            responseData = { 
-              result: { 
-                finalPrice, 
-                printingPrice,
-                designCost,
-                postProcessCost,
-                modelCost,
-                details: `Calculado para ${weight}g (${clientType}) en ${filamentType}. Diseño: ${designMinutes}m, Post: ${postProcessMinutes}m, Modelo: $${modelCost}.` 
-              } 
-            };
+            const finalResult = await chat.sendMessage({
+              message: `Presupuesto calculado: Total: $${finalPrice}. Impresión: $${printingPrice}, Diseño: $${designCost}, Post: $${postProcessCost}, Modelo: $${modelCost}. Detalla claramente estos valores al usuario.`
+            });
+            return finalResult.text;
           }
-
-          toolResponses.push({
-            id: call.id,
-            name: call.name,
-            response: responseData
-          });
         }
-
-        const finalResult = await chat.sendMessage({
-          message: "Generá la respuesta final detallando: Impresión, Diseño, Post-procesado, Costo del modelo y el total final."
-        });
-        return finalResult.text;
       }
 
       return result.text;
     } catch (err) {
-      console.error("SinapsisBot Error:", err);
-      throw err;
+      console.warn("SinapsisBot Gemini API error, falling back to local logic:", err);
+      return undefined;
     }
   }
 }

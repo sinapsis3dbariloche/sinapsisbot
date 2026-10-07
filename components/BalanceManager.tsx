@@ -28,6 +28,36 @@ import ConfirmDialog from './ConfirmDialog';
 import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
 import { isBalanceFormDirty } from '../services/unsavedChangesLogic';
 
+/**
+ * Safe date formatter that will never throw on invalid/null/undefined dates
+ */
+export const safeFormatDate = (dateInput: any, pattern: string, options?: any, fallback = '-'): string => {
+  try {
+    if (!dateInput) return fallback;
+    let d: Date;
+    if (typeof dateInput?.toDate === 'function') {
+      d = dateInput.toDate();
+    } else if (dateInput instanceof Date) {
+      d = dateInput;
+    } else if (typeof dateInput === 'string') {
+      const clean = dateInput.trim();
+      if (!clean) return fallback;
+      const cleanStr = clean.length === 10 ? `${clean}T12:00:00` : clean;
+      d = new Date(cleanStr);
+    } else if (typeof dateInput === 'number') {
+      d = new Date(dateInput);
+    } else if (dateInput?.seconds && typeof dateInput.seconds === 'number') {
+      d = new Date(dateInput.seconds * 1000);
+    } else {
+      return fallback;
+    }
+    if (isNaN(d.getTime())) return fallback;
+    return format(d, pattern, options);
+  } catch {
+    return fallback;
+  }
+};
+
 interface BalanceManagerProps {
   remitos: Remito[];
   expenses: Expense[];
@@ -52,25 +82,39 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
 
   // Sorted closings: newest end date first
   const sortedClosings = useMemo(() => {
-    return [...balanceClosings].sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+    return [...(balanceClosings || [])]
+      .filter((c): c is BalanceClosing => Boolean(c && typeof c === 'object'))
+      .sort((a, b) => {
+        const timeA = a.endDate ? new Date(a.endDate).getTime() : 0;
+        const timeB = b.endDate ? new Date(b.endDate).getTime() : 0;
+        return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+      });
   }, [balanceClosings]);
 
   const latestClosing = sortedClosings[0] || null;
 
   // Default dates: start after last closing or beginning of current year
   const defaultStartDate = useMemo(() => {
-    if (latestClosing) {
-      // Day after last closing
-      const lastEnd = new Date(latestClosing.endDate);
-      lastEnd.setDate(lastEnd.getDate() + 1);
-      return format(lastEnd, 'yyyy-MM-dd');
+    if (latestClosing && latestClosing.endDate) {
+      try {
+        const clean = normalizeDateString(latestClosing.endDate);
+        if (clean && clean.length === 10) {
+          const parts = clean.split('-').map(Number);
+          if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            const nextDay = new Date(parts[0], parts[1] - 1, parts[2] + 1);
+            return safeFormatDate(nextDay, 'yyyy-MM-dd', undefined, '2026-01-01');
+          }
+        }
+      } catch (err) {
+        console.warn("Could not calculate next day from closing:", err);
+      }
     }
     // Default to start of current year
-    return format(startOfYear(new Date()), 'yyyy-MM-dd');
+    return safeFormatDate(startOfYear(new Date()), 'yyyy-MM-dd', undefined, '2026-01-01');
   }, [latestClosing]);
 
   const defaultEndDate = useMemo(() => {
-    return format(new Date(), 'yyyy-MM-dd');
+    return safeFormatDate(new Date(), 'yyyy-MM-dd', undefined, '2026-10-07');
   }, []);
 
   const [startDate, setStartDate] = useState<string>(defaultStartDate);
@@ -85,12 +129,18 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   // Auto-suggest name when dates change if user hasn't explicitly set a custom one
   const suggestedName = useMemo(() => {
     if (!startDate || !endDate) return 'Balance Personalizado';
-    const startY = startDate.slice(0, 4);
-    const endY = endDate.slice(0, 4);
-    if (startY === endY && startDate.slice(5) === '01-01' && endDate.slice(5) === '12-31') {
-      return `Ejercicio Anual ${startY}`;
+    try {
+      const startY = startDate.slice(0, 4);
+      const endY = endDate.slice(0, 4);
+      if (startY === endY && startDate.slice(5) === '01-01' && endDate.slice(5) === '12-31') {
+        return `Ejercicio Anual ${startY}`;
+      }
+      const sFormatted = safeFormatDate(startDate, 'dd/MM/yyyy', undefined, startDate);
+      const eFormatted = safeFormatDate(endDate, 'dd/MM/yyyy', undefined, endDate);
+      return `Cierre ${sFormatted} al ${eFormatted}`;
+    } catch {
+      return 'Balance Personalizado';
     }
-    return `Cierre ${format(new Date(startDate + 'T12:00:00'), 'dd/MM/yyyy')} al ${format(new Date(endDate + 'T12:00:00'), 'dd/MM/yyyy')}`;
   }, [startDate, endDate]);
 
   const activeName = closingName.trim() || suggestedName;
@@ -109,15 +159,20 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   // Live calculation of preview for the chosen dates
   const preview = useMemo(() => {
     if (!startDate || !endDate) return null;
-    return calculateBalancePeriod({
-      remitos,
-      expenses,
-      startDate,
-      endDate,
-      name: activeName,
-      closedBy: currentUserEmail,
-      notes: closingNotes
-    });
+    try {
+      return calculateBalancePeriod({
+        remitos: Array.isArray(remitos) ? remitos : [],
+        expenses: Array.isArray(expenses) ? expenses : [],
+        startDate,
+        endDate,
+        name: activeName,
+        closedBy: currentUserEmail,
+        notes: closingNotes
+      });
+    } catch (err) {
+      console.error("Error calculating balance preview:", err);
+      return null;
+    }
   }, [remitos, expenses, startDate, endDate, activeName, currentUserEmail, closingNotes]);
 
   const formatCurrency = (amount: number) => {
@@ -212,7 +267,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
     doc.setTextColor(100);
     doc.setFont('helvetica', 'normal');
     doc.text(`Período Comprendido: ${closing.startDate} al ${closing.endDate}`, 105, 58, { align: 'center' });
-    doc.text(`Fecha de Cierre: ${format(new Date(closing.closedAt), "dd/MM/yyyy HH:mm'hs'")} | Responsable: ${closing.closedBy}`, 105, 63, { align: 'center' });
+    doc.text(`Fecha de Cierre: ${safeFormatDate(closing.closedAt, "dd/MM/yyyy HH:mm'hs'", undefined, closing.closedAt || '-')} | Responsable: ${closing.closedBy || 'Admin'}`, 105, 63, { align: 'center' });
 
     // Financial Summary Table
     const resultLabel = closing.resultType === 'PROFIT' ? 'GANANCIA NETA LIQUIDADA (+)' : closing.resultType === 'LOSS' ? 'PÉRDIDA DEL PERÍODO (-)' : 'RESULTADO NEUTRO ($0)';
@@ -354,7 +409,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
                 </div>
                 <h2 className="text-xl font-black uppercase tracking-tight text-white">
                   {latestClosing ? (
-                    <>Abierto desde el {format(new Date(defaultStartDate + 'T12:00:00'), "d 'de' MMMM 'de' yyyy", { locale: es })}</>
+                    <>Abierto desde el {safeFormatDate(defaultStartDate, "d 'de' MMMM 'de' yyyy", { locale: es }, defaultStartDate)}</>
                   ) : (
                     <>Sin cierres previos registrados (Primer ejercicio)</>
                   )}
@@ -734,7 +789,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
                           </div>
                           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
                             Período: {closing.startDate} al {closing.endDate} • Cerrado el{' '}
-                            {format(new Date(closing.closedAt), "d 'de' MMMM 'de' yyyy", { locale: es })}
+                            {safeFormatDate(closing.closedAt, "d 'de' MMMM 'de' yyyy", { locale: es }, closing.closedAt || '-')}
                           </p>
                         </div>
                       </div>

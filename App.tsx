@@ -14,6 +14,9 @@ import SupplierManager from './components/SupplierManager';
 import ExpenseManager from './components/ExpenseManager';
 import Dashboard from './components/Dashboard';
 import { BalanceManager } from './components/BalanceManager';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import ChatBot from './components/ChatBot';
+import { ChatAssistantDrawer } from './components/ChatAssistantDrawer';
 import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, BalanceClosing } from './types';
 import { 
   subscribeToQuotes,
@@ -469,15 +472,17 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'balances' && (
-          <BalanceManager 
-            remitos={remitos}
-            expenses={expenses}
-            quotes={quotes}
-            balanceClosings={balanceClosings}
-            onSaveClosing={handleSaveBalanceClosing}
-            onDeleteClosing={handleDeleteBalanceClosing}
-            currentUserEmail={user?.email || 'Admin'}
-          />
+          <ErrorBoundary fallbackTitle="Módulo de Balances" onReset={() => requestNavigate('dashboard')}>
+            <BalanceManager 
+              remitos={remitos}
+              expenses={expenses}
+              quotes={quotes}
+              balanceClosings={balanceClosings}
+              onSaveClosing={handleSaveBalanceClosing}
+              onDeleteClosing={handleDeleteBalanceClosing}
+              currentUserEmail={user?.email || 'Admin'}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'remitos' && (
@@ -496,6 +501,40 @@ const App: React.FC = () => {
             onCreateCustomer={handleUpdateCustomer}
           />
         )}
+
+        {activeTab === 'assistant' && (
+          <ChatBot 
+            customers={customers}
+            suppliers={suppliers}
+            stock={stock}
+            remitos={remitos}
+            expenses={expenses}
+            quotes={quotes}
+            userName={user?.displayName || user?.email || 'Lucas'}
+            getNextRemitoNumber={getNextRemitoNumber}
+            onSaveRemito={handleUpdateRemito}
+            onSaveExpense={handleUpdateExpense}
+            onNavigate={requestNavigate}
+          />
+        )}
+
+        {/* Global Floating AI Assistant Accessible from All Sections */}
+        {activeTab !== 'assistant' && (
+          <ChatAssistantDrawer 
+            customers={customers}
+            suppliers={suppliers}
+            stock={stock}
+            remitos={remitos}
+            expenses={expenses}
+            quotes={quotes}
+            userName={user?.displayName || user?.email || 'Lucas'}
+            getNextRemitoNumber={getNextRemitoNumber}
+            onSaveRemito={handleUpdateRemito}
+            onSaveExpense={handleUpdateExpense}
+            onNavigate={requestNavigate}
+          />
+        )}
+
         <NewVersionToast />
       </div>
     </Layout>
