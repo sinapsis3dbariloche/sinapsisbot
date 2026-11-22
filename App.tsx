@@ -15,8 +15,6 @@ import ExpenseManager from './components/ExpenseManager';
 import Dashboard from './components/Dashboard';
 import { BalanceManager } from './components/BalanceManager';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import ChatBot from './components/ChatBot';
-import { ChatAssistantDrawer } from './components/ChatAssistantDrawer';
 import { Quote, StockItem, Printer, Customer, Remito, Supplier, Expense, BalanceClosing } from './types';
 import { 
   subscribeToQuotes,
@@ -499,39 +497,6 @@ const App: React.FC = () => {
             initialDraftFilter={remitoDraftFilter}
             initialFilterMonth={filterMonth}
             onCreateCustomer={handleUpdateCustomer}
-          />
-        )}
-
-        {activeTab === 'assistant' && (
-          <ChatBot 
-            customers={customers}
-            suppliers={suppliers}
-            stock={stock}
-            remitos={remitos}
-            expenses={expenses}
-            quotes={quotes}
-            userName={user?.displayName || user?.email || 'Lucas'}
-            getNextRemitoNumber={getNextRemitoNumber}
-            onSaveRemito={handleUpdateRemito}
-            onSaveExpense={handleUpdateExpense}
-            onNavigate={requestNavigate}
-          />
-        )}
-
-        {/* Global Floating AI Assistant Accessible from All Sections */}
-        {activeTab !== 'assistant' && (
-          <ChatAssistantDrawer 
-            customers={customers}
-            suppliers={suppliers}
-            stock={stock}
-            remitos={remitos}
-            expenses={expenses}
-            quotes={quotes}
-            userName={user?.displayName || user?.email || 'Lucas'}
-            getNextRemitoNumber={getNextRemitoNumber}
-            onSaveRemito={handleUpdateRemito}
-            onSaveExpense={handleUpdateExpense}
-            onNavigate={requestNavigate}
           />
         )}
 
