@@ -1,5 +1,5 @@
 
-import { Package, Menu, RotateCcw, Settings2, Wrench, ListTodo, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, Scale, Layers } from 'lucide-react';
+import { Package, Menu, RotateCcw, Settings2, Wrench, MonitorSmartphone, Users, FileText, LayoutDashboard, LogOut, Briefcase, DollarSign, Globe, Instagram, Box, Hexagon, ChevronLeft, ChevronRight, ChevronDown, Scale, Layers } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useUnsavedChanges } from '../lib/UnsavedChangesContext';
@@ -10,11 +10,74 @@ interface LayoutProps {
   setActiveTab: (tab: string) => void;
 }
 
+interface NavSubItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}
+
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  isGroup?: boolean;
+  subItems?: NavSubItem[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'customers', label: 'Clientes', icon: Users },
+  { id: 'quotes', label: 'Presupuestos', icon: FileText },
+  { id: 'remitos', label: 'Ventas', icon: FileText },
+  {
+    id: 'expenses',
+    label: 'Gastos',
+    icon: DollarSign,
+    subItems: [
+      { id: 'suppliers', label: 'Proveedores', icon: Briefcase },
+    ],
+  },
+  { id: 'balances', label: 'Balances', icon: Scale },
+  {
+    id: 'stock-group',
+    label: 'Stock',
+    icon: Package,
+    isGroup: true,
+    subItems: [
+      { id: 'stock', label: 'Filamento', icon: Box },
+      { id: 'stock-grafica', label: 'Gráfica', icon: Layers },
+      { id: 'stock-edit', label: 'Catálogo', icon: Settings2 },
+      { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw },
+    ],
+  },
+  {
+    id: 'maint',
+    label: 'Mantenimiento',
+    icon: Wrench,
+    subItems: [
+      { id: 'maint-edit', label: 'Impresoras', icon: MonitorSmartphone },
+    ],
+  },
+];
+
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
   const { logout, user } = useAuth();
   const { confirmIfDirty } = useUnsavedChanges();
+
+  // Auto-expand parent group if navigation jumps directly to a subitem from another view
+  React.useEffect(() => {
+    const parent = NAV_ITEMS.find(item => item.subItems?.some(sub => sub.id === activeTab));
+    if (parent) {
+      setExpandedGroups(prev => (prev[parent.id] ? prev : { ...prev, [parent.id]: true }));
+    }
+  }, [activeTab]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
 
   const versionString = React.useMemo(() => {
     if (typeof __BUILD_TIME__ === 'undefined' || __BUILD_TIME__ === 'dev') return 'v.DEV';
@@ -27,22 +90,16 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
     return `v${year}.${month}.${day}-${hours}${minutes}`;
   }, []);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'customers', label: 'Clientes', icon: Users },
-    { id: 'quotes', label: 'Presupuestos', icon: FileText },
-    { id: 'remitos', label: 'Ventas', icon: FileText },
-    { id: 'expenses', label: 'Gastos', icon: DollarSign },
-    { id: 'suppliers', label: 'Proveedores', icon: Briefcase, isSubItem: true },
-    { id: 'balances', label: 'Balances', icon: Scale },
-    { id: 'stock-group', label: 'Stock', icon: Package, isGroup: true },
-    { id: 'stock', label: 'Filamento', icon: Box, isSubItem: true },
-    { id: 'stock-grafica', label: 'Gráfica', icon: Layers, isSubItem: true },
-    { id: 'stock-edit', label: 'Catálogo', icon: Settings2, isSubItem: true },
-    { id: 'stock-reset', label: 'Reiniciar', icon: RotateCcw, isSubItem: true },
-    { id: 'maint', label: 'Mantenimiento', icon: Wrench },
-    { id: 'maint-edit', label: 'Impresoras', icon: MonitorSmartphone, isSubItem: true },
-  ];
+  const navigateWithCheck = (tabId: string, onConfirmed?: () => void) => {
+    if (activeTab === tabId) {
+      onConfirmed?.();
+      return;
+    }
+    confirmIfDirty(() => {
+      setActiveTab(tabId);
+      onConfirmed?.();
+    }, 'Tenés datos cargados sin guardar en el formulario actual. Si cambiás de sección, se perderán los datos no guardados. ¿Deseas volver para guardar, o descartar todo y avanzar?');
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
@@ -106,45 +163,102 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) =>
           </div>
 
           <nav className="flex-1 px-2 space-y-1 mt-1 overflow-y-auto scrollbar-hide py-1">
-            {navItems.map((item) => {
+            {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isSub = item.isSubItem;
-              const isGroup = (item as any).isGroup;
+              const hasSubItems = Boolean(item.subItems && item.subItems.length > 0);
+              const isExpanded = Boolean(expandedGroups[item.id]);
+              const isActive = activeTab === item.id;
+              const hasActiveChild = Boolean(item.subItems?.some(sub => sub.id === activeTab));
 
-              if (isGroup) {
-                return (
-                  <div
-                    key={item.id}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center ${
-                      isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-4 py-2 pt-3'
-                    } font-black uppercase tracking-widest text-[11px] text-slate-300 select-none cursor-default shrink-0`}
-                  >
-                    <Icon size={18} className="text-orange-500" />
-                    {!isSidebarCollapsed && <span>{item.label}</span>}
-                  </div>
-                );
-              }
+              const handleRootClick = () => {
+                if (item.isGroup) {
+                  toggleGroup(item.id);
+                  return;
+                }
+
+                if (hasSubItems) {
+                  if (isActive) {
+                    toggleGroup(item.id);
+                    return;
+                  }
+                  navigateWithCheck(item.id, () => {
+                    setExpandedGroups(prev => ({ ...prev, [item.id]: true }));
+                  });
+                  return;
+                }
+
+                navigateWithCheck(item.id, () => {
+                  setIsSidebarOpen(false);
+                });
+              };
+
+              const rootButtonClasses = isActive
+                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/40 translate-x-1 opacity-100'
+                : hasActiveChild && !isExpanded
+                  ? 'bg-slate-900 text-orange-400'
+                  : item.isGroup && isExpanded
+                    ? 'text-slate-200 hover:bg-slate-900 hover:text-white'
+                    : 'text-slate-500 hover:bg-slate-900 hover:text-white';
 
               return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    if (activeTab === item.id) {
-                      setIsSidebarOpen(false);
-                      return;
-                    }
-                    confirmIfDirty(() => {
-                      setActiveTab(item.id);
-                      setIsSidebarOpen(false);
-                    }, 'Tenés datos cargados sin guardar en el formulario actual. Si cambiás de sección, se perderán los datos no guardados. ¿Deseas volver para guardar, o descartar todo y avanzar?');
-                  }}
-                  title={isSidebarCollapsed ? item.label : undefined}
-                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} py-3 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 shrink-0 ${isSidebarCollapsed ? 'px-0' : (isSub ? 'pl-8 text-[9px] opacity-70' : 'px-4 text-[11px]')} ${activeTab === item.id ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 hover:bg-slate-900 hover:text-white'}`}
-                >
-                  <Icon size={isSub && !isSidebarCollapsed ? 14 : 18} />
-                  {!isSidebarCollapsed && <span>{item.label}</span>}
-                </button>
+                <div key={item.id} className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={handleRootClick}
+                    aria-expanded={hasSubItems ? isExpanded : undefined}
+                    title={isSidebarCollapsed ? item.label : undefined}
+                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-4'} py-3 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all duration-300 shrink-0 ${rootButtonClasses}`}
+                  >
+                    <span className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} min-w-0`}>
+                      <Icon size={18} className={item.isGroup && !isActive ? 'text-orange-500 shrink-0' : 'shrink-0'} />
+                      {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
+                    </span>
+
+                    {hasSubItems && !isSidebarCollapsed && (
+                      <span
+                        role="button"
+                        tabIndex={-1}
+                        aria-label={isExpanded ? `Colapsar ${item.label}` : `Desplegar ${item.label}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleGroup(item.id);
+                        }}
+                        className="p-0.5 rounded-lg hover:bg-white/10 transition-colors shrink-0"
+                      >
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                      </span>
+                    )}
+                  </button>
+
+                  {hasSubItems && isExpanded && (
+                    <div className="space-y-1">
+                      {item.subItems!.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = activeTab === sub.id;
+
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              navigateWithCheck(sub.id, () => {
+                                setIsSidebarOpen(false);
+                              });
+                            }}
+                            title={isSidebarCollapsed ? sub.label : undefined}
+                            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 pl-8 pr-4 text-[9px]'} py-2.5 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 shrink-0 ${isSubActive ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/40 translate-x-1 opacity-100' : 'text-slate-500 opacity-75 hover:opacity-100 hover:bg-slate-900 hover:text-white'}`}
+                          >
+                            <SubIcon size={isSidebarCollapsed ? 16 : 14} className="shrink-0" />
+                            {!isSidebarCollapsed && <span className="truncate">{sub.label}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
